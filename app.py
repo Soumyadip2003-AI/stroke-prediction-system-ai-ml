@@ -11,8 +11,7 @@ feature_columns = joblib.load('feature_columns.pkl')
 
 # Title and description
 st.title("Stroke Prediction System")
-st.write("This application predicts the likelihood of stroke based on patient data.")
-st.write("Made by Soumyadip Sarkar")
+
 
 # Input fields on the main page
 age = st.slider("Age", 0, 100, 50)
@@ -60,6 +59,9 @@ input_scaled = scaler.transform(input_df)
 # Make prediction
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
+
+st.write("This application predicts the likelihood of stroke based on patient data.")
+st.write("Made by soumyadip sarkar")
 
 # Prediction button and results display
 if st.button("Predict Stroke Risk"):
