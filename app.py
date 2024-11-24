@@ -9,7 +9,7 @@ model = joblib.load('stroke_prediction_model.pkl')
 scaler = joblib.load('scaler.pkl')
 feature_columns = joblib.load('feature_columns.pkl')
 
-st.sidebar.title("Patient Information")
+st.write.title("Patient Information")
 age = st.sidebar.slider("Age", 0, 100, 50)
 hypertension = st.sidebar.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
 heart_disease = st.sidebar.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
