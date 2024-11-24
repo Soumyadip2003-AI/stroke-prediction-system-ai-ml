@@ -58,6 +58,7 @@ probability = model.predict_proba(input_scaled)[0][1]
 
 st.title("Stroke Prediction System")
 st.write("This application predicts the likelihood of stroke based on patient data.")
+st.write("Made buy soumyadip sarkar")
 
 if st.button("Predict Stroke Risk"):
     if prediction == 1:
