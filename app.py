@@ -1,20 +1,40 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import shap
-import matplotlib.pyplot as plt
 
 
+# Load the pre-trained model and necessary files
 model = joblib.load('stroke_prediction_model.pkl')
 scaler = joblib.load('scaler.pkl')
 feature_columns = joblib.load('feature_columns.pkl')
 
 
+# Add custom CSS for transparent background
+st.markdown(
+    """
+    <style>
+    .main {
+        background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white background */
+        padding: 20px;
+        border-radius: 10px;
+    }
+    .stApp {
+        background: url('https://your-image-url.com/background.jpg'); /* Add your image URL here */
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# Title and description
 st.title("Stroke Prediction System")
 st.write("This application predicts the likelihood of stroke based on patient data.")
 
 
-
+# Input fields
 age = st.slider("Age", 0, 100, 50)
 hypertension = st.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
 heart_disease = st.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
@@ -27,6 +47,7 @@ residence_type = st.selectbox("Residence Type", ["Rural", "Urban"])
 smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes"])
 
 
+# Process user input
 user_data = {
     'age': age,
     'hypertension': hypertension,
@@ -48,6 +69,7 @@ user_data = {
 }
 
 
+# Create input dataframe
 input_df = pd.DataFrame([user_data])
 for feature in feature_columns:
     if feature not in input_df.columns:
@@ -55,19 +77,18 @@ for feature in feature_columns:
 input_df = input_df[feature_columns]
 
 
+# Scale input data
 input_scaled = scaler.transform(input_df)
 
 
+# Predict stroke risk
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
 
 
-
-
+# Display prediction results
 if st.button("Predict Stroke Risk"):
     if prediction == 1:
         st.error(f"⚠️ High Risk of Stroke! (Probability: {probability:.2%})")
     else:
         st.success(f"✅ Low Risk of Stroke (Probability: {probability:.2%})")
-
-
