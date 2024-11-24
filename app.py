@@ -61,7 +61,29 @@ input_scaled = scaler.transform(input_df)
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
 
-
+button = st.markdown(
+    """
+    <style>
+    .green-button {
+        display: inline-block;
+        color: white;
+        background-color: #4CAF50;
+        border: none;
+        padding: 10px 24px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .green-button:hover {
+        background-color: #45a049;
+    }
+    </style>
+    <a href="#" class="green-button" onclick="window.dispatchEvent(new Event('predictStroke'))">Predict Stroke Risk</a>
+    """,
+    unsafe_allow_html=True
+)
 
 
 if st.button("Predict Stroke Risk"):
