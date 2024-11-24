@@ -4,24 +4,29 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 
-
+# Load the model, scaler, and feature columns
 model = joblib.load('stroke_prediction_model.pkl')
 scaler = joblib.load('scaler.pkl')
 feature_columns = joblib.load('feature_columns.pkl')
 
-st.write.title("Patient Information")
-age = st.sidebar.slider("Age", 0, 100, 50)
-hypertension = st.sidebar.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
-heart_disease = st.sidebar.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
-avg_glucose_level = st.sidebar.slider("Average Glucose Level", 50.0, 300.0, 120.0)
-bmi = st.sidebar.slider("BMI", 10.0, 50.0, 25.0)
-gender = st.sidebar.selectbox("Gender", ["Female", "Male", "Other"])
-ever_married = st.sidebar.selectbox("Ever Married", ["No", "Yes"])
-work_type = st.sidebar.selectbox("Work Type", ["Private", "Self-employed", "children", "Never_worked", "Govt_job"])
-residence_type = st.sidebar.selectbox("Residence Type", ["Rural", "Urban"])
-smoking_status = st.sidebar.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes"])
+# Title and description
+st.title("Stroke Prediction System")
+st.write("This application predicts the likelihood of stroke based on patient data.")
+st.write("Made by Soumyadip Sarkar")
 
+# Input fields on the main page
+age = st.slider("Age", 0, 100, 50)
+hypertension = st.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
+heart_disease = st.selectbox("Heart Disease", [0, 1], format_func=lambda x: "Yes" if x else "No")
+avg_glucose_level = st.slider("Average Glucose Level", 50.0, 300.0, 120.0)
+bmi = st.slider("BMI", 10.0, 50.0, 25.0)
+gender = st.selectbox("Gender", ["Female", "Male", "Other"])
+ever_married = st.selectbox("Ever Married", ["No", "Yes"])
+work_type = st.selectbox("Work Type", ["Private", "Self-employed", "children", "Never_worked", "Govt_job"])
+residence_type = st.selectbox("Residence Type", ["Rural", "Urban"])
+smoking_status = st.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes"])
 
+# Preparing input data for the model
 user_data = {
     'age': age,
     'hypertension': hypertension,
@@ -42,28 +47,23 @@ user_data = {
     'smoking_status_smokes': 1 if smoking_status == "smokes" else 0
 }
 
-
+# Convert user data to DataFrame and align with feature columns
 input_df = pd.DataFrame([user_data])
 for feature in feature_columns:
     if feature not in input_df.columns:
         input_df[feature] = 0
 input_df = input_df[feature_columns]
 
-
+# Scale the input data
 input_scaled = scaler.transform(input_df)
 
-
+# Make prediction
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
 
-st.title("Stroke Prediction System")
-st.write("This application predicts the likelihood of stroke based on patient data.")
-st.write("Made by soumyadip sarkar")
-
+# Prediction button and results display
 if st.button("Predict Stroke Risk"):
     if prediction == 1:
         st.error(f"⚠️ High Risk of Stroke! (Probability: {probability:.2%})")
     else:
         st.success(f"✅ Low Risk of Stroke (Probability: {probability:.2%})")
-
-
