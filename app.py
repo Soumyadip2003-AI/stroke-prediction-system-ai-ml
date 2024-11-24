@@ -11,6 +11,7 @@ feature_columns = joblib.load('feature_columns.pkl')
 
 # Title and description
 st.title("Stroke Prediction System")
+st.write("This application predicts the likelihood of stroke based on patient data.")
 
 
 # Input fields on the main page
@@ -60,8 +61,7 @@ input_scaled = scaler.transform(input_df)
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
 
-st.write("This application predicts the likelihood of stroke based on patient data.")
-st.write("Made by soumyadip sarkar")
+
 
 # Prediction button and results display
 if st.button("Predict Stroke Risk"):
@@ -69,3 +69,5 @@ if st.button("Predict Stroke Risk"):
         st.error(f"⚠️ High Risk of Stroke! (Probability: {probability:.2%})")
     else:
         st.success(f"✅ Low Risk of Stroke (Probability: {probability:.2%})")
+
+st.write("Made by Soumyadip Sarkar")
