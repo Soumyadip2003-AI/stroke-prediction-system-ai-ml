@@ -70,4 +70,4 @@ if st.button("Predict Stroke Risk"):
     else:
         st.success(f"✅ Low Risk of Stroke (Probability: {probability:.2%})")
 
-st.write("Made by Soumyadip Sarkar")
+
