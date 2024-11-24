@@ -4,12 +4,11 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 
-# Load the trained model, scaler, and feature columns
+
 model = joblib.load('stroke_prediction_model.pkl')
 scaler = joblib.load('scaler.pkl')
 feature_columns = joblib.load('feature_columns.pkl')
 
-# Sidebar: User input for patient details
 st.sidebar.title("Patient Information")
 age = st.sidebar.slider("Age", 0, 100, 50)
 hypertension = st.sidebar.selectbox("Hypertension", [0, 1], format_func=lambda x: "Yes" if x else "No")
@@ -22,7 +21,7 @@ work_type = st.sidebar.selectbox("Work Type", ["Private", "Self-employed", "chil
 residence_type = st.sidebar.selectbox("Residence Type", ["Rural", "Urban"])
 smoking_status = st.sidebar.selectbox("Smoking Status", ["never smoked", "formerly smoked", "smokes"])
 
-# Process the user input into a format suitable for the model
+
 user_data = {
     'age': age,
     'hypertension': hypertension,
@@ -43,23 +42,23 @@ user_data = {
     'smoking_status_smokes': 1 if smoking_status == "smokes" else 0
 }
 
-# Align the input data with the feature columns
+
 input_df = pd.DataFrame([user_data])
 for feature in feature_columns:
     if feature not in input_df.columns:
         input_df[feature] = 0
 input_df = input_df[feature_columns]
 
-# Scale the input data
+
 input_scaled = scaler.transform(input_df)
 
-# Prediction
+
 prediction = model.predict(input_scaled)[0]
 probability = model.predict_proba(input_scaled)[0][1]
 
-# Main Panel
 st.title("Stroke Prediction System")
 st.write("This application predicts the likelihood of stroke based on patient data.")
+st.write("Made by soumyadip sarkar")
 
 if st.button("Predict Stroke Risk"):
     if prediction == 1:
