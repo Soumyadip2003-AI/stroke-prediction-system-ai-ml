@@ -330,25 +330,32 @@ with tab1:
                 st.markdown("<div class='feature-importance'>", unsafe_allow_html=True)
                 st.subheader("Understanding Your Risk Factors")
                 
-                if has_shap:
-                    # Create waterfall plot
-                    fig, ax = plt.subplots(figsize=(10, 6))
-                    shap.plots.waterfall(shap_values[0], max_display=10, show=False)
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    
-                    # Create force plot to show feature interactions
-                    plt.figure(figsize=(12, 3))
-                    shap_html = shap.plots.force(shap_values[0], matplotlib=False)
-                    st.components.v1.html(shap_html, height=150)
-                    
-                    # Explain the SHAP values
-                    st.markdown("""
-                    **Interpreting the charts above:**
-                    - Red factors increase stroke risk
-                    - Blue factors decrease stroke risk
-                    - The size of each bar represents how strongly that factor affects your prediction
-                    """)
+                # Replace the waterfall plot code with this:
+if has_shap:
+    # Create waterfall plot - fix for multi-output models
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Check if we're dealing with a multi-output model
+    if len(shap_values.shape) > 2:  # Multi-output case
+        # For multi-output models, select the first output's explanation
+        shap.plots.waterfall(shap_values[0, 0], max_display=10, show=False)
+    else:  # Single output case
+        # For single output, just take the first explanation
+        shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+    
+    plt.tight_layout()
+    st.pyplot(fig)
+    
+    # Similarly modify the force plot
+    plt.figure(figsize=(12, 3))
+    
+    # Check if we're dealing with a multi-output model for force plot too
+    if len(shap_values.shape) > 2:  # Multi-output case
+        shap_html = shap.plots.force(shap_values[0, 0], matplotlib=False)
+    else:  # Single output case
+        shap_html = shap.plots.force(shap_values[0], matplotlib=False)
+        
+    st.components.v1.html(shap_html, height=150)
                 else:
                     # Alternative: Show coefficient importance if model has coef_
                     if hasattr(model, 'coef_'):
