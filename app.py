@@ -330,32 +330,79 @@ with tab1:
                 st.markdown("<div class='feature-importance'>", unsafe_allow_html=True)
                 st.subheader("Understanding Your Risk Factors")
                 
-                # Replace the waterfall plot code with this:
-if has_shap:
-    # Create waterfall plot - fix for multi-output models
-    fig, ax = plt.subplots(figsize=(10, 6))
-    
-    # Check if we're dealing with a multi-output model
-    if len(shap_values.shape) > 2:  # Multi-output case
-        # For multi-output models, select the first output's explanation
-        shap.plots.waterfall(shap_values[0, 0], max_display=10, show=False)
-    else:  # Single output case
-        # For single output, just take the first explanation
-        shap.plots.waterfall(shap_values[0], max_display=10, show=False)
-    
-    plt.tight_layout()
-    st.pyplot(fig)
-    
-    # Similarly modify the force plot
-    plt.figure(figsize=(12, 3))
-    
-    # Check if we're dealing with a multi-output model for force plot too
-    if len(shap_values.shape) > 2:  # Multi-output case
-        shap_html = shap.plots.force(shap_values[0, 0], matplotlib=False)
-    else:  # Single output case
-        shap_html = shap.plots.force(shap_values[0], matplotlib=False)
-        
-    st.components.v1.html(shap_html, height=150)
+                if has_shap:
+                    # Create waterfall plot with proper handling for multi-output models
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    
+                    try:
+                        # First determine if we're dealing with a multi-output model
+                        if isinstance(shap_values, list) or (hasattr(shap_values, 'shape') and len(shap_values.shape) > 2):
+                            # Multi-output case: select the first output's explanation
+                            if isinstance(shap_values, list):
+                                # For list-type shap values
+                                shap_explanation = shap_values[0][0]
+                            else:
+                                # For numpy array-type shap values
+                                shap_explanation = shap_values[0, 0]
+                        else:
+                            # Single output case: just take the first explanation
+                            shap_explanation = shap_values[0]
+                        
+                        # Generate the waterfall plot
+                        shap.plots.waterfall(shap_explanation, max_display=10, show=False)
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        
+                        # Create force plot with the same logic
+                        plt.figure(figsize=(12, 3))
+                        
+                        # Apply the same multi-output detection logic
+                        if isinstance(shap_values, list) or (hasattr(shap_values, 'shape') and len(shap_values.shape) > 2):
+                            if isinstance(shap_values, list):
+                                shap_explanation = shap_values[0][0]
+                            else:
+                                shap_explanation = shap_values[0, 0]
+                        else:
+                            shap_explanation = shap_values[0]
+                            
+                        shap_html = shap.plots.force(shap_explanation, matplotlib=False)
+                        st.components.v1.html(shap_html, height=150)
+                        
+                    except Exception as e:
+                        st.warning(f"Error displaying SHAP visualizations: {str(e)}")
+                        st.info("Falling back to simplified feature importance display.")
+                        
+                        # Fallback to feature importance or coefficient display
+                        if hasattr(model, 'feature_importances_'):
+                            feature_importance = pd.DataFrame({
+                                'Feature': feature_columns,
+                                'Importance': model.feature_importances_
+                            })
+                            feature_importance = feature_importance.sort_values(by='Importance', ascending=False).head(10)
+                            
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            colors = ['#1E88E5'] * len(feature_importance)  # Using a consistent color
+                            ax.barh(feature_importance['Feature'], feature_importance['Importance'], color=colors)
+                            ax.set_title('Top 10 Risk Factors')
+                            ax.set_xlabel('Feature Importance')
+                            plt.tight_layout()
+                            st.pyplot(fig)
+                        elif hasattr(model, 'coef_'):
+                            # For linear models
+                            feature_importance = pd.DataFrame({
+                                'Feature': feature_columns,
+                                'Importance': model.coef_[0] if len(model.coef_.shape) > 1 else model.coef_
+                            })
+                            feature_importance['Absolute'] = abs(feature_importance['Importance'])
+                            feature_importance = feature_importance.sort_values(by='Absolute', ascending=False).head(10)
+                            
+                            fig, ax = plt.subplots(figsize=(10, 6))
+                            colors = ['#FF4136' if x > 0 else '#0074D9' for x in feature_importance['Importance']]
+                            ax.barh(feature_importance['Feature'], feature_importance['Importance'], color=colors)
+                            ax.set_title('Top 10 Risk Factors')
+                            ax.set_xlabel('Impact on Risk (Positive = Higher Risk)')
+                            plt.tight_layout()
+                            st.pyplot(fig)
                 else:
                     # Alternative: Show coefficient importance if model has coef_
                     if hasattr(model, 'coef_'):
@@ -375,6 +422,14 @@ if has_shap:
                         ax.set_xlabel('Impact on Risk (Positive = Higher Risk)')
                         plt.tight_layout()
                         st.pyplot(fig)
+                
+                # Explain the SHAP values
+                st.markdown("""
+                **Interpreting the charts above:**
+                - Red factors increase stroke risk
+                - Blue factors decrease stroke risk
+                - The size of each bar represents how strongly that factor affects your prediction
+                """)
                 
                 # Disclaimer
                 st.markdown("<p class='disclaimer'>Note: This tool provides an estimate based on machine learning models and should not replace professional medical advice. Please consult a healthcare provider for proper diagnosis and treatment.</p>", unsafe_allow_html=True)
@@ -585,6 +640,9 @@ with tab2:
             }
             
             # Create DataFrame from user data
+            # Continuing from where the code was cut off...
+
+            # Create DataFrame from user data
             input_df = pd.DataFrame([user_data])
             
             # Ensure all required features are present
@@ -599,248 +657,161 @@ with tab2:
             input_scaled = scaler.transform(input_df)
             
             # Make prediction
-            modified_probability = model.predict_proba(input_scaled)[0][1]
+            modified_prediction = model.predict(input_scaled)[0]
+            modified_probability = float(model.predict_proba(input_scaled)[0][1])
             
-            # Display comparison
+            # Display results
+            modified_percentage = modified_probability * 100
+            original_percentage = risk_score * 100
+            difference = original_percentage - modified_percentage
+            
+            st.subheader("Risk Comparison")
+            
             comp_col1, comp_col2 = st.columns(2)
             
             with comp_col1:
-                st.subheader("Current Risk")
+                st.markdown("**Current Risk:**")
                 st.progress(min(risk_score, 1.0))
-                st.write(f"**{risk_score*100:.1f}%**")
+                st.write(f"{original_percentage:.1f}%")
             
             with comp_col2:
-                st.subheader("Modified Risk")
+                st.markdown("**Modified Risk:**")
                 st.progress(min(modified_probability, 1.0))
-                st.write(f"**{modified_probability*100:.1f}%**")
+                st.write(f"{modified_percentage:.1f}%")
             
-            # Calculate and show difference
-            difference = risk_score - modified_probability
-            percent_reduction = (difference / risk_score) * 100 if risk_score > 0 else 0
-            
+            # Risk reduction statement
             if difference > 0:
-                st.success(f"👍 {impact_description} could reduce your stroke risk by approximately {percent_reduction:.1f}% (absolute reduction: {difference*100:.1f}%)")
+                st.success(f"**Potential Impact:** {impact_description} could reduce your stroke risk by approximately {difference:.1f} percentage points.")
             elif difference < 0:
-                st.warning(f"⚠️ {impact_description} appears to increase risk in this model by {abs(difference)*100:.1f}%. This may be a limitation of the model.")
+                st.error(f"**Note:** {impact_description} may not reduce risk in your specific case based on the current model.")
             else:
-                st.info(f"ℹ️ {impact_description} shows no significant change in this model's risk prediction.")
+                st.info(f"**Note:** {impact_description} shows minimal impact on your stroke risk based on the current model.")
+
     else:
-        st.info("Please complete a risk assessment in the first tab to receive personalized insights.")
+        st.info("Please complete a risk assessment in the 'Risk Assessment' tab to view personalized recommendations.")
+    
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tab3:
+    # Resources section
     st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-    st.subheader("Understanding Stroke")
-    
-    st.markdown("""
-    ### What is a Stroke?
-    A stroke occurs when blood supply to part of the brain is interrupted or reduced, preventing brain tissue from getting oxygen and nutrients. Brain cells begin to die within minutes, making stroke a medical emergency.
-    
-    ### Types of Stroke
-    - **Ischemic stroke**: Caused by a blockage in an artery supplying blood to the brain
-    - **Hemorrhagic stroke**: Caused by bleeding in or around the brain
-    - **Transient ischemic attack (TIA)**: A temporary period of symptoms similar to a stroke, often called a "mini-stroke"
-    
-    ### Common Risk Factors
-    1. **High blood pressure (hypertension)**: The leading cause of stroke
-    2. **Smoking**: Damages blood vessels, increases blood pressure, and reduces oxygen in blood
-    3. **Diabetes**: High blood sugar damages blood vessels over time
-    4. **Heart disease**: Various forms of heart disease can increase stroke risk
-    5. **Age**: Risk increases with age, doubling each decade after age 55
-    6. **Family history**: Genetic factors can increase risk
-    7. **Obesity**: Increases risk of high blood pressure, diabetes, and heart disease
-    8. **Physical inactivity**: Associated with many health conditions that raise stroke risk
-    
-    ### Warning Signs (FAST)
-    **F**: Face drooping – One side of the face droops or is numb
-    - **A**: Arm weakness – One arm is weak or numb
-    - **S**: Speech difficulty – Speech may be slurred or difficult to understand
-    - **T**: Time to call emergency services – If someone shows any of these symptoms, call emergency services immediately
-    
-    ### Prevention Strategies
-    - **Control blood pressure**: The most important controllable risk factor
-    - **Manage diabetes**: Keep blood sugar within target range
-    - **Adopt a heart-healthy diet**: Mediterranean or DASH diet rich in fruits, vegetables, whole grains
-    - **Regular physical activity**: At least 150 minutes of moderate activity weekly
-    - **Maintain healthy weight**: BMI between 18.5-24.9
-    - **Avoid smoking**: Quitting smoking reduces risk substantially
-    - **Limit alcohol**: Moderate consumption or abstinence
-    - **Treat sleep apnea**: If diagnosed, follow treatment recommendations
-    - **Regular check-ups**: Monitor blood pressure, cholesterol, and other risk factors
-    """)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Educational resources
-    st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
-    st.subheader("Educational Resources")
+    st.subheader("Additional Resources")
     
     resources_col1, resources_col2 = st.columns(2)
     
     with resources_col1:
+        st.markdown("### Professional Organizations")
         st.markdown("""
-        ### Learn More About Stroke
         - [American Stroke Association](https://www.stroke.org/)
-        - [National Stroke Association](https://www.stroke.org/)
         - [World Stroke Organization](https://www.world-stroke.org/)
-        
-        ### Stroke Risk Calculators
-        - [AHA/ASA Stroke Risk Calculator](https://www.stroke.org/en/about-stroke/stroke-risk-factors)
-        - [Framingham Stroke Risk Score](https://www.mdcalc.com/framingham-stroke-risk-score)
+        - [National Stroke Association](https://www.stroke.org/)
+        - [CDC Stroke Information](https://www.cdc.gov/stroke/)
         """)
     
     with resources_col2:
+        st.markdown("### Healthy Lifestyle Resources")
         st.markdown("""
-        ### Video Resources
-        - [Understanding Stroke: Symptoms and Treatments](https://www.youtube.com/watch?v=ryIGnzodxDs)
-        - [Stroke Prevention Guidelines](https://www.youtube.com/watch?v=HTaU6XImsm0)
-        
-        ### Support for Stroke Survivors
-        - [Stroke Support Groups](https://www.stroke.org/en/stroke-support-group-finder)
-        - [Rehabilitation Resources](https://www.stroke.org/en/life-after-stroke/stroke-rehab)
+        - [DASH Diet for Hypertension](https://www.nhlbi.nih.gov/health-topics/dash-eating-plan)
+        - [Physical Activity Guidelines](https://health.gov/our-work/nutrition-physical-activity/physical-activity-guidelines)
+        - [Smoking Cessation Resources](https://smokefree.gov/)
+        - [Blood Pressure Management Guide](https://www.heart.org/en/health-topics/high-blood-pressure)
         """)
+    
     st.markdown("</div>", unsafe_allow_html=True)
 
-# Add footer section
-st.markdown("""
-<div style="background-color:#e810d2; padding:10px; border-radius:10px; margin-top:20px; text-align:center;">
-    <p style="font-size:0.8rem;">
-        © 2025 Advanced Stroke Risk Predictor | This application is for educational purposes only and is not intended to be a substitute for professional medical advice, diagnosis, or treatment.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
-# Add download report functionality
-if 'history' in st.session_state and len(st.session_state.history) > 0:
-    latest = st.session_state.history[-1]
+with tab3:
+    st.markdown("<div class='metric-container'>", unsafe_allow_html=True)
+    st.markdown("<h2 class='sub-header'>About Stroke</h2>", unsafe_allow_html=True)
     
-    def create_report():
-        # Create report in HTML format
-        report = f"""
-        <html>
-        <head>
-            <title>Stroke Risk Assessment Report</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; margin: 40px; }}
-                h1 {{ color: #1E88E5; }}
-                h2 {{ color: #424242; margin-top: 20px; }}
-                .metric {{ background-color: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }}
-                .risk-high {{ color: #F44336; }}
-                .risk-moderate {{ color: #FFC107; }}
-                .risk-low {{ color: #4CAF50; }}
-                .disclaimer {{ font-style: italic; font-size: 0.8em; color: #757575; margin-top: 30px; }}
-            </style>
-        </head>
-        <body>
-            <h1>Stroke Risk Assessment Report</h1>
-            <p>Generated on: {latest['timestamp']}</p>
-            
-            <h2>Risk Assessment Result</h2>
-            <div class="metric">
-                <p>Stroke Risk Probability: <strong>
-                """
-        
-        # Add risk level with appropriate styling
-        risk_score = latest["probability"]
-        if risk_score >= 0.5:
-            report += f'<span class="risk-high">{risk_score*100:.1f}% (High Risk)</span>'
-        elif risk_score >= 0.2:
-            report += f'<span class="risk-moderate">{risk_score*100:.1f}% (Moderate Risk)</span>'
-        else:
-            report += f'<span class="risk-low">{risk_score*100:.1f}% (Low Risk)</span>'
-            
-        report += f"""
-                </strong></p>
-            </div>
-            
-            <h2>Patient Information</h2>
-            <div class="metric">
-                <p><strong>Age:</strong> {latest['inputs']['age']}</p>
-                <p><strong>Gender:</strong> {latest['inputs']['gender']}</p>
-                <p><strong>BMI:</strong> {latest['inputs']['bmi']:.1f}</p>
-                <p><strong>Average Glucose Level:</strong> {latest['inputs']['avg_glucose_level']:.1f} mg/dL</p>
-                <p><strong>Hypertension:</strong> {latest['inputs']['hypertension']}</p>
-                <p><strong>Heart Disease:</strong> {latest['inputs']['heart_disease']}</p>
-                <p><strong>Smoking Status:</strong> {latest['inputs']['smoking_status']}</p>
-                <p><strong>Work Type:</strong> {latest['inputs']['work_type']}</p>
-                <p><strong>Residence Type:</strong> {latest['inputs']['residence_type']}</p>
-                <p><strong>Ever Married:</strong> {latest['inputs']['ever_married']}</p>
-            </div>
-            
-            <h2>Key Recommendations</h2>
-            <div class="metric">
-                <ul>
-        """
-        
-        # Add recommendations based on risk factors
-        recommendations = []
-        inputs = latest['inputs']
-        
-        if inputs['hypertension'] == "Yes":
-            recommendations.append("Monitor blood pressure regularly and follow prescribed treatment")
-        if inputs['heart_disease'] == "Yes":
-            recommendations.append("Continue cardiac care as directed by your healthcare provider")
-        if inputs['avg_glucose_level'] > 125:
-            recommendations.append("Consult with a healthcare provider about your elevated blood glucose levels")
-        if inputs['bmi'] > 30:
-            recommendations.append("Work with healthcare providers on a weight management plan")
-        if inputs['smoking_status'] == "Smokes":
-            recommendations.append("Consider a smoking cessation program - quitting smoking significantly reduces stroke risk")
-        
-        # Add general recommendations
-        general_recs = [
-            "Maintain regular physical activity (at least 150 minutes of moderate exercise weekly)",
-            "Follow a Mediterranean or DASH diet rich in fruits, vegetables, and whole grains",
-            "Limit alcohol consumption",
-            "Learn to recognize the signs of stroke: Face drooping, Arm weakness, Speech difficulty, Time to call emergency"
-        ]
-        
-        # Add recommendations to report
-        all_recs = recommendations + general_recs
-        for rec in all_recs:
-            report += f"<li>{rec}</li>\n"
-        
-        report += """
-                </ul>
-            </div>
-            
-            <p class="disclaimer">
-                Note: This report provides an estimate based on machine learning models and should not replace 
-                professional medical advice. Please consult a healthcare provider for proper diagnosis and treatment.
-            </p>
-        </body>
-        </html>
-        """
-        
-        return report
-    
-    # Create download button
-    report_html = create_report()
-    report_bytes = report_html.encode()
-    b64 = base64.b64encode(report_bytes).decode()
-    href = f'<a href="data:text/html;base64,{b64}" download="stroke_risk_report.html" class="download-button">📄 Download Assessment Report</a>'
-    
-    st.sidebar.markdown("<h3>Export Report</h3>", unsafe_allow_html=True)
-    st.sidebar.markdown(href, unsafe_allow_html=True)
-    st.sidebar.markdown("Download a detailed report of your latest assessment for your records or to share with healthcare providers.")
-
-# Add about section to sidebar
-with st.sidebar:
-    st.markdown("## About this App")
     st.markdown("""
-    This application uses machine learning to estimate stroke risk based on various health and lifestyle factors. It is designed for educational purposes only and should not replace professional medical advice.
+    ## What is a Stroke?
     
-    **Model Information:**
-    - Based on healthcare data from multiple sources
-    - Trained using ensemble learning techniques
-    - Features include both modifiable and non-modifiable risk factors
+    A stroke occurs when blood flow to part of the brain is interrupted or reduced, preventing brain tissue from getting oxygen and nutrients. Brain cells begin to die within minutes, making stroke a medical emergency.
     
-    For more information about stroke risk assessment, consult with your healthcare provider.
+    There are two main types of stroke:
+    - **Ischemic stroke**: Caused by a blockage in an artery that supplies blood to the brain
+    - **Hemorrhagic stroke**: Caused by a blood vessel leaking or rupturing in the brain
+    
+    A temporary disruption in blood flow, called a transient ischemic attack (TIA) or "mini-stroke," can also occur.
     """)
     
-    # Add developer info
-    st.markdown("### Developed by")
-    st.markdown("Advanced Health Analytics Team")
+    st.markdown("## Warning Signs of Stroke - Think FAST")
     
-    # Version info
-    st.markdown("**Version:** 2.1.0")
-    st.markdown("**Last updated:** April 2025")
+    fast_col1, fast_col2 = st.columns(2)
+    
+    with fast_col1:
+        st.markdown("""
+        ### FAST Warning Signs
+        - **F** - Face Drooping: Does one side of the face droop?
+        - **A** - Arm Weakness: Is one arm weak or numb?
+        - **S** - Speech Difficulty: Is speech slurred or strange?
+        - **T** - Time to Call Emergency Services: If you observe any of these signs, call immediately!
+        """)
+    
+    with fast_col2:
+        st.markdown("""
+        ### Additional Warning Signs
+        - Sudden numbness or weakness in the face, arm, or leg, especially on one side of the body
+        - Sudden confusion, trouble speaking, or difficulty understanding speech
+        - Sudden trouble seeing in one or both eyes
+        - Sudden trouble walking, dizziness, loss of balance, or lack of coordination
+        - Sudden severe headache with no known cause
+        """)
+    
+    st.markdown("## Risk Factors for Stroke")
+    
+    risk_col1, risk_col2 = st.columns(2)
+    
+    with risk_col1:
+        st.markdown("""
+        ### Manageable Risk Factors
+        - High blood pressure
+        - Smoking
+        - Diabetes
+        - High cholesterol
+        - Physical inactivity
+        - Obesity
+        - Unhealthy diet
+        - Excessive alcohol consumption
+        - Atrial fibrillation
+        - Sleep apnea
+        """)
+    
+    with risk_col2:
+        st.markdown("""
+        ### Non-Manageable Risk Factors
+        - Age (risk increases with age)
+        - Gender (stroke risk differs between genders)
+        - Family history of stroke
+        - Race and ethnicity (higher risks for certain groups)
+        - Previous stroke or TIA
+        - Certain genetic disorders
+        """)
+    
+    st.markdown("## Prevention Strategies")
+    st.markdown("""
+    ### Lifestyle Changes
+    - **Diet**: Follow a Mediterranean or DASH diet rich in fruits, vegetables, whole grains, and lean proteins
+    - **Exercise**: Engage in regular physical activity (at least 150 minutes of moderate exercise per week)
+    - **Smoking**: Quit smoking and avoid secondhand smoke
+    - **Alcohol**: Limit alcohol consumption
+    
+    ### Medical Management
+    - **Blood Pressure**: Control high blood pressure through medication and lifestyle changes
+    - **Cholesterol**: Maintain healthy cholesterol levels
+    - **Diabetes**: Manage blood sugar levels effectively
+    - **Medications**: Take prescribed medications, such as blood thinners for atrial fibrillation
+    
+    ### Regular Screening
+    - Get regular health check-ups to monitor blood pressure, cholesterol, and blood sugar
+    - Discuss stroke risk with healthcare providers
+    """)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# Footer
+st.markdown("""
+<div style='text-align: center; padding: 20px; color: #666;'>
+<p>© 2025 Advanced Stroke Risk Predictor | Developed for Healthcare Professionals</p>
+<p class='disclaimer'>This tool is intended for educational and screening purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.</p>
+</div>
+""", unsafe_allow_html=True)
