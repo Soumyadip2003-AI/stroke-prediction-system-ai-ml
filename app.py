@@ -695,7 +695,7 @@ with tab3:
 
 # Add footer section
 st.markdown("""
-<div style="background-color:#f0f2f6; padding:10px; border-radius:10px; margin-top:20px; text-align:center;">
+<div style="background-color:#e810d2; padding:10px; border-radius:10px; margin-top:20px; text-align:center;">
     <p style="font-size:0.8rem;">
         © 2025 Advanced Stroke Risk Predictor | This application is for educational purposes only and is not intended to be a substitute for professional medical advice, diagnosis, or treatment.
     </p>
