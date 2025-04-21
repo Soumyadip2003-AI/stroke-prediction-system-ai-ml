@@ -55,7 +55,7 @@ st.markdown("""
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.markdown("<h1 class='main-header'>🧠 Advanced Stroke Risk Predictor</h1>", unsafe_allow_html=True)
-    st.markdown("Powered by AI to help identify potential stroke risks based on health data")
+    
 
 # Initialize session state for tracking changes and history
 if 'history' not in st.session_state:
