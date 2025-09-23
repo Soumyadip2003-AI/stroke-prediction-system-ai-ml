@@ -1,0 +1,48 @@
+{
+  "name": "neuropredict-stroke-assessment",
+  "version": "1.0.0",
+  "description": "Advanced AI-powered stroke risk assessment system with React frontend and Flask backend",
+  "main": "index.html",
+  "scripts": {
+    "start": "python backend.py",
+    "dev": "python backend.py",
+    "build": "echo 'No build step required for static files'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "stroke",
+    "prediction",
+    "ai",
+    "machine-learning",
+    "healthcare",
+    "react",
+    "flask",
+    "tailwind"
+  ],
+  "author": "NeuroPredict Team",
+  "license": "MIT",
+  "dependencies": {
+    "flask": "^2.3.0",
+    "flask-cors": "^4.0.0",
+    "pandas": "^2.0.0",
+    "numpy": "^1.24.0",
+    "scikit-learn": "^1.3.0",
+    "xgboost": "^1.7.0",
+    "lightgbm": "^4.0.0",
+    "catboost": "^1.2.0",
+    "joblib": "^1.3.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0",
+    "python": ">=3.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neuropredict/stroke-assessment"
+  },
+  "bugs": {
+    "url": "https://github.com/neuropredict/stroke-assessment/issues"
+  },
+  "homepage": "https://neuropredict.ai"
+}
