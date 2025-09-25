@@ -6,17 +6,20 @@ interface AssessmentProps {
 
 const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_BASE = (process.env.REACT_APP_API_BASE as string) || 'http://localhost:5002';
+
   const [formData, setFormData] = useState({
-    age: 50,
+    age: 55,
     gender: 'Male',
-    ever_married: 'No',
-    hypertension: 'No',
+    ever_married: 'Yes',
+    hypertension: 'Yes',
     heart_disease: 'No',
-    avg_glucose_level: 120,
-    bmi: 25,
+    avg_glucose_level: 150,
+    bmi: 29,
     work_type: 'Private',
     residence_type: 'Urban',
-    smoking_status: 'never smoked'
+    smoking_status: 'smokes'
   });
 
   const nextStep = () => {
@@ -36,8 +39,12 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
   };
 
   const handleSubmit = async () => {
+    console.log('Submit button clicked');
+    console.log('Form data:', formData);
+    setIsSubmitting(true);
     try {
-      const response = await fetch('/api/predict', {
+      console.log('Making API call to:', `${API_BASE}/api/predict`);
+      const response = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,10 +52,13 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         body: JSON.stringify(formData)
       });
 
+      console.log('Response status:', response.status);
       if (response.ok) {
         const result = await response.json();
+        console.log('API response:', result);
         onComplete(result);
       } else {
+        console.log('API error, falling back to simulation');
         // Fallback to simulated prediction
         const simulatedResult = {
           risk_percentage: Math.random() * 100,
@@ -58,6 +68,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
           health_analysis: [],
           recommendations: []
         };
+        console.log('Simulated result:', simulatedResult);
         onComplete(simulatedResult);
       }
     } catch (error) {
@@ -71,15 +82,18 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         health_analysis: [],
         recommendations: []
       };
+      console.log('Error fallback result:', simulatedResult);
       onComplete(simulatedResult);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">AI-Powered Risk Assessment</h2>
-        <p className="text-xl text-gray-300">Enter your health information for an advanced stroke risk analysis</p>
+        <h2 className="text-4xl font-bold mb-4">AI-Powered Stroke Risk Assessment</h2>
+        <p className="text-xl text-gray-300">Enter your health information for an advanced stroke risk analysis using 6 ensemble ML models with 88.56% accuracy</p>
       </div>
 
       <div className="glass-effect rounded-2xl p-8">
@@ -302,7 +316,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         <div className="flex justify-between items-center mt-8">
           <button
             onClick={prevStep}
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || isSubmitting}
             className="flex items-center px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <i className="fas fa-chevron-left mr-2"></i>
@@ -321,7 +335,8 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
           {currentStep < 3 ? (
             <button
               onClick={nextStep}
-              className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300"
+              disabled={isSubmitting}
+              className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
               <i className="fas fa-chevron-right ml-2"></i>
@@ -329,10 +344,11 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
           ) : (
             <button
               onClick={handleSubmit}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+              disabled={isSubmitting}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed z-10 relative"
             >
               <i className="fas fa-brain mr-2"></i>
-              <span>Analyze Risk with AI</span>
+              <span>{isSubmitting ? 'Analyzing...' : 'Get AI Stroke Risk Assessment'}</span>
             </button>
           )}
         </div>

@@ -1,0 +1,6 @@
+patient_data,actual_outcome,outcome_known,timestamp,data_id
+"{'age': 45, 'gender': 'Male', 'hypertension': 'No', 'heart_disease': 'No', 'ever_married': 'Yes', 'avg_glucose_level': 85, 'bmi': 28, 'work_type': 'Private', 'residence_type': 'Urban', 'smoking_status': 'never smoked'}",1,True,2025-09-25T03:38:09.717996,1
+"{'age': 67, 'gender': 'Female', 'hypertension': 'Yes', 'heart_disease': 'No', 'ever_married': 'Yes', 'avg_glucose_level': 140, 'bmi': 32, 'work_type': 'Self-employed', 'residence_type': 'Rural', 'smoking_status': 'formerly smoked'}",2,True,2025-09-25T03:38:09.725356,2
+"{'age': 72, 'gender': 'Male', 'hypertension': 'Yes', 'heart_disease': 'Yes', 'ever_married': 'Yes', 'avg_glucose_level': 180, 'bmi': 35, 'work_type': 'Private', 'residence_type': 'Urban', 'smoking_status': 'smokes'}",0,True,2025-09-25T03:38:09.726148,3
+"{'age': 55, 'gender': 'Male', 'hypertension': 'Yes', 'heart_disease': 'No', 'ever_married': 'Yes', 'avg_glucose_level': 150, 'bmi': 29, 'work_type': 'Private', 'residence_type': 'Urban', 'smoking_status': 'smokes'}",1,True,2025-09-25T03:38:09.726608,4
+"{'age': 80, 'gender': 'Female', 'hypertension': 'Yes', 'heart_disease': 'Yes', 'ever_married': 'Yes', 'avg_glucose_level': 200, 'bmi': 38, 'work_type': 'Private', 'residence_type': 'Urban', 'smoking_status': 'formerly smoked'}",2,True,2025-09-25T03:38:09.727027,5

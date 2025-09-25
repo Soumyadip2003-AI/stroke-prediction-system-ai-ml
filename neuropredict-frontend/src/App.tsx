@@ -70,6 +70,13 @@ function App() {
     setCurrentSection('results');
   };
 
+  const handleNewAssessment = () => {
+    setAssessmentData(null);
+    setCurrentSection('assessment');
+    const el = document.getElementById('assessment');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const scrollToSection = (sectionId: string) => {
     setCurrentSection(sectionId);
     const element = document.getElementById(sectionId);
@@ -81,7 +88,7 @@ function App() {
   return (
     <div className="App bg-gray-900 text-white min-h-screen">
       {/* Animated Background */}
-      <div id="particles-js" className="fixed inset-0 z-0"></div>
+      <div id="particles-js" className="fixed inset-0 z-0 pointer-events-none"></div>
       
       {/* Navigation */}
       <Navigation currentSection={currentSection} onNavigate={scrollToSection} />
@@ -99,7 +106,7 @@ function App() {
       {/* Results Section */}
       {assessmentData && (
         <section id="results" className="py-20 bg-gray-900">
-          <Results data={assessmentData} />
+          <Results data={assessmentData} onNewAssessment={handleNewAssessment} />
         </section>
       )}
       
@@ -115,7 +122,8 @@ function App() {
       
       {/* Footer */}
       <Footer />
-      
+
+
       {/* Loading Overlay */}
       {isLoading && <LoadingOverlay />}
     </div>

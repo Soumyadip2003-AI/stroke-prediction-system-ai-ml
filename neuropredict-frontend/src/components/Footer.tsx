@@ -35,7 +35,7 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="font-semibold mb-4">Contact</h4>
             <div className="space-y-2">
-              <p className="text-gray-400"><i className="fas fa-envelope mr-2"></i> info@neuropredict.ai</p>
+              <p className="text-gray-400"><i className="fas fa-envelope mr-2"></i> soumyadip.0202@gmail.com</p>
               <p className="text-gray-400"><i className="fas fa-phone mr-2"></i> +1 (555) 123-4567</p>
             </div>
           </div>
