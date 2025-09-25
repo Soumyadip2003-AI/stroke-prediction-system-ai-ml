@@ -94,11 +94,19 @@ def load_models():
             logger.error(f"XGBoost Library error: {e}")
             logger.warning("Skipping XGBoost model due to library issues")
         
-        # Load scaler (optional)
-        try:
-            scalers['main'] = joblib.load('scalers.pkl').get('robust')
-        except Exception:
+        # Load scaler (optional) - try multiple locations
+        scaler_loaded = False
+        for scaler_path in ['scalers.pkl', 'scaler.pkl']:
+            try:
+                scalers['main'] = joblib.load(scaler_path).get('robust')
+                logger.info(f"Loaded scaler from {scaler_path}")
+                scaler_loaded = True
+                break
+            except Exception:
+                continue
+        if not scaler_loaded:
             scalers['main'] = None
+            logger.warning("No scaler found, using raw features")
 
         # Define the expected features (exactly what we create in preprocessing)
         feature_columns = [
