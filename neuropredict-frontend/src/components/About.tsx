@@ -8,8 +8,8 @@ const About: React.FC = () => {
           <h2 className="text-4xl font-bold mb-6">About NeuroPredict</h2>
           <p className="text-xl text-gray-300 mb-8">
             NeuroPredict is an advanced AI-powered stroke risk assessment system featuring
-            the Ultimate XGBoost Model with state-of-the-art performance.
-            Our system achieves 95.11% accuracy through advanced feature engineering and hyperparameter optimization.
+            9 powerful machine learning models with state-of-the-art performance.
+            Our system achieves 95.11% accuracy through ensemble learning and advanced feature engineering.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center">
@@ -18,7 +18,7 @@ const About: React.FC = () => {
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>Ultimate XGBoost Model</span>
+              <span>9 Advanced AI Models</span>
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>

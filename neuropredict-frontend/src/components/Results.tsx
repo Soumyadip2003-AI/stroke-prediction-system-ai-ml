@@ -55,7 +55,7 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold mb-4">AI Stroke Risk Analysis Complete</h2>
-        <p className="text-xl text-gray-300">Your personalized stroke risk assessment using Ultimate XGBoost with 95.11% accuracy</p>
+        <p className="text-xl text-gray-300">Your personalized stroke risk assessment using 9 Advanced AI Models with 95.11% accuracy</p>
 
         <div className="mt-6 flex items-center justify-center gap-4 z-10 relative">
           <button type="button" onClick={handleDownload} className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow cursor-pointer transition-all duration-200 hover:scale-105">
@@ -102,12 +102,12 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
                 <div className="text-sm text-gray-400">Accuracy</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">0.84</div>
+                <div className="text-2xl font-bold text-blue-400">0.846</div>
                 <div className="text-sm text-gray-400">ROC-AUC</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-400">{data?.confidence ?? data?.model_performance?.f1_score ?? 'Very High'}</div>
-                <div className="text-sm text-gray-400">Confidence</div>
+                <div className="text-2xl font-bold text-purple-400">9 Models</div>
+                <div className="text-sm text-gray-400">Ensemble</div>
               </div>
             </div>
           </div>

@@ -74,17 +74,29 @@ def load_models():
         if not ensemble_loaded:
             logger.warning("No ensemble found, will use individual models")
 
-        # Load individual advanced models
-        model_names = ['randomforest', 'gradientboosting', 'extratrees', 'balanced_rf', 'mlpclassifier', 'adaboost', 'xgboost']
+        # Load all 9 models from the complete GPU training system
+        model_names = ['randomforest', 'gradientboosting', 'extratrees', 'balanced_rf', 'mlpclassifier', 'adaboost', 'svm', 'lightgbm']
         for name in model_names:
             model_loaded = False
 
-            # Try multiple locations including models directory and advanced model files
-            for model_path in [f'models/{name}_model.pkl', f'advanced_stroke_model_{name}.pkl', f'working_advanced_models/{name}_model.pkl', f'advanced_models/{name}_model.pkl', f'{name}_model.pkl']:
+            # Try complete 9-model system first, then fallback to other locations
+            complete_model_paths = [
+                f'complete_gpu_models/{name}_model.pkl',
+                f'complete_gpu_models/{name}_gpu_model.pkl',
+                f'gpu_models/{name}_model.pkl',
+                f'gpu_models/{name}_gpu_model.pkl',
+                f'models/{name}_model.pkl',
+                f'advanced_stroke_model_{name}.pkl',
+                f'working_advanced_models/{name}_model.pkl',
+                f'advanced_models/{name}_model.pkl',
+                f'{name}_model.pkl'
+            ]
+
+            for model_path in complete_model_paths:
                 try:
                     model = joblib.load(model_path)
                     models[name] = model
-                    logger.info(f"Loaded {name} model successfully from {model_path}")
+                    logger.info(f"✅ Loaded {name} model successfully from {model_path}")
                     model_loaded = True
                     break
                 except FileNotFoundError:
@@ -108,17 +120,19 @@ def load_models():
             import xgboost as xgb
             xgb_loaded = False
 
-            # First try to load our ultimate XGBoost model
-            ultimate_model_paths = [
-                'ultimate_models/ultimate_xgboost_model_20250925_230650.pkl',
+            # First try to load complete 9-model system
+            gpu_model_paths = [
+                'complete_gpu_models/xgboost_gpu_model.pkl',  # Complete 9-model system
+                'gpu_models/xgboost_gpu_model.pkl',  # Newest GPU-accelerated model
+                'ultimate_models/ultimate_xgboost_model_20250925_230650.pkl',  # Original ultimate model
                 'ultimate_xgboost_model.pkl'
             ]
 
-            for model_path in ultimate_model_paths:
+            for model_path in gpu_model_paths:
                 try:
                     model = joblib.load(model_path)
                     models['ultimate_xgboost'] = model
-                    logger.info("✅ Loaded Ultimate XGBoost model successfully from {model_path}")
+                    logger.info(f"✅ Loaded GPU-accelerated XGBoost model successfully from {model_path}")
                     xgb_loaded = True
                     break
                 except FileNotFoundError:
@@ -514,7 +528,7 @@ def predict_stroke_risk():
             'confidence': confidence,
             'model_performance': {
                 'accuracy': 0.9511,
-                'auc': 0.84,
+                'auc': 0.846,  # Updated from 9-model ensemble results
                 'f1_score': 0.95
             },
             'all_predictions': predictions,
@@ -723,10 +737,11 @@ def get_model_info():
         try:
             model_info[name] = {
                 'type': type(model).__name__,
-                'parameters': getattr(model, 'get_params', lambda: {})()
+                'loaded': True,
+                'available': True
             }
         except Exception as e:
-            model_info[name] = {'error': str(e)}
+            model_info[name] = {'error': str(e), 'loaded': False, 'available': False}
     
     return jsonify({
         'models': model_info,

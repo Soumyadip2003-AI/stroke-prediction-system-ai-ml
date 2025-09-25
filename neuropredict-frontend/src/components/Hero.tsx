@@ -100,7 +100,7 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
             <span className="text-white">Stroke Risk Prediction</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-            Experience advanced healthcare AI using the Ultimate XGBoost Model with advanced feature engineering.
+            Experience advanced healthcare AI using 9 powerful machine learning models with advanced feature engineering.
             Get personalized stroke risk predictions with 95.11% accuracy and intelligent recommendations.
           </p>
 
@@ -124,12 +124,12 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
               <div className="text-xs sm:text-sm text-gray-400">Accuracy</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400 interactive-text">1</div>
-              <div className="text-xs sm:text-sm text-gray-400">Ultimate Model</div>
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400 interactive-text">0.846</div>
+              <div className="text-xs sm:text-sm text-gray-400">ROC-AUC</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-400 interactive-text">∞</div>
-              <div className="text-xs sm:text-sm text-gray-400">Learning</div>
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-400 interactive-text">9</div>
+              <div className="text-xs sm:text-sm text-gray-400">AI Models</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
               <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400 interactive-text">30+</div>

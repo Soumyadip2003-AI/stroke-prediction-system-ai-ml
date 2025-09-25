@@ -81,7 +81,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         <p className="text-xl text-gray-300">
           Enter your health information for an advanced stroke risk analysis using{' '}
           <span className="text-blue-400 font-semibold hover:text-purple-400 transition-colors duration-300 cursor-pointer">
-            Ultimate XGBoost Model
+            9 Advanced AI Models
           </span>{' '}
           with{' '}
           <span className="text-green-400 font-semibold hover:text-blue-400 transition-colors duration-300 cursor-pointer">
