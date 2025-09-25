@@ -14,7 +14,7 @@ const Insights: React.FC = () => {
             <i className="fas fa-brain"></i>
           </div>
           <h3 className="text-xl font-semibold mb-2">Ensemble Learning</h3>
-          <p className="text-gray-300">Combines 7 different AI algorithms for maximum accuracy.</p>
+          <p className="text-gray-300">Combines 6 different AI algorithms for maximum accuracy.</p>
         </div>
         <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
           <div className="text-4xl text-purple-400 mb-4">
