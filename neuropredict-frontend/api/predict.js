@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+// Serverless function for Vercel deployment
+// This is a simplified prediction function for demo purposes
 
 // Simple prediction logic for demo purposes
 // In production, this would call your Flask backend
@@ -107,6 +107,7 @@ function generateRecommendations(riskScore, data) {
   return recommendations;
 }
 
+// Export for Vercel serverless functions
 module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
