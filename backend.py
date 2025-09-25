@@ -275,7 +275,9 @@ def predict_stroke_risk():
         pass
         
         # Use ensemble model as primary prediction
-        primary_model = 'ensemble' if 'ensemble' in models else list(models.keys())[0]
+        if not models:
+        raise ValueError("No models loaded. Please ensure model files are available.")
+    primary_model = 'ensemble' if 'ensemble' in models else list(models.keys())[0]
         primary_prediction = predictions.get(primary_model, 0)
         primary_probability = probabilities.get(primary_model, 0.0)
         
