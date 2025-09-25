@@ -22,13 +22,18 @@ function App() {
     script.src = 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js';
     script.onload = () => {
       if ((window as any).particlesJS) {
+        // Detect mobile device and adjust particle count
+        const isMobile = window.innerWidth <= 768;
+        const particleCount = isMobile ? 80 : 150;
+        const particleDensity = isMobile ? 600 : 1000;
+
         (window as any).particlesJS('particles-js', {
           particles: {
             number: {
-              value: 150,
+              value: particleCount,
               density: {
                 enable: true,
-                value_area: 1000
+                value_area: particleDensity
               }
             },
             color: {
@@ -236,11 +241,34 @@ function App() {
             }
           };
 
-          // Add event listeners
+          // Add event listeners for both desktop and mobile
           canvas.addEventListener('mousemove', updateMousePosition);
+
+          // Mobile touch event handling
+          const handleTouchMove = (e: Event) => {
+            e.preventDefault();
+            const touchEvent = e as TouchEvent;
+            const touch = touchEvent.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mouseX = touch.clientX - rect.left;
+            mouseY = touch.clientY - rect.top;
+
+            // Simulate mouse speed for mobile
+            mouseSpeed = 3;
+
+            updateMousePosition(e);
+          };
+
+          const handleTouchEnd = (e: Event) => {
+            e.preventDefault();
+            handleClick(e);
+          };
+
+          canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+          canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
           canvas.addEventListener('click', handleClick);
 
-          // Add keyboard interactions for extra fun
+          // Add keyboard interactions for extra fun (desktop only)
           const handleKeyPress = (e: KeyboardEvent) => {
             if (e.key === ' ') {
               // Spacebar creates burst effect
@@ -254,13 +282,20 @@ function App() {
             }
           };
 
-          document.addEventListener('keypress', handleKeyPress);
+          // Only add keyboard events on desktop
+          if (!isMobile) {
+            document.addEventListener('keypress', handleKeyPress);
+          }
 
           // Cleanup function
           return () => {
             canvas.removeEventListener('mousemove', updateMousePosition);
+            canvas.removeEventListener('touchmove', handleTouchMove);
             canvas.removeEventListener('click', handleClick);
-            document.removeEventListener('keypress', handleKeyPress);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+            if (!isMobile) {
+              document.removeEventListener('keypress', handleKeyPress);
+            }
           };
         }
       }
@@ -293,7 +328,7 @@ function App() {
   };
 
   return (
-    <div className="App bg-gray-900 text-white min-h-screen">
+    <div className="App bg-gray-900 text-white min-h-screen overflow-x-hidden">
       {/* Animated Background */}
       <div id="particles-js" className="fixed inset-0 z-0 pointer-events-none"></div>
       

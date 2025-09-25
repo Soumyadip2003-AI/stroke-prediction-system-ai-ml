@@ -11,6 +11,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Mobile performance optimizations */
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  text-rendering: optimizeLegibility;
+  /* Prevent horizontal scroll */
+  overflow-x: hidden;
+  width: 100%;
 }
 
 code {
@@ -236,12 +244,24 @@ code {
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  /* Mobile optimizations */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .interactive-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: interactive-glow 2s ease-in-out infinite;
+}
+
+.interactive-card:active {
+  transform: translateY(-4px) scale(0.98);
+  transition: all 0.1s ease;
 }
 
 .interactive-card::before {
@@ -258,6 +278,24 @@ code {
 
 .interactive-card:hover::before {
   left: 100%;
+}
+
+/* Mobile-specific hover alternatives */
+@media (hover: none) and (pointer: coarse) {
+  .interactive-card:active {
+    transform: translateY(-4px) scale(0.98);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    animation: interactive-glow 1s ease-in-out;
+  }
+
+  .interactive-card:hover {
+    transform: none;
+    animation: none;
+  }
+
+  .interactive-card:hover::before {
+    left: -100%;
+  }
 }
 
 .interactive-text {
@@ -457,6 +495,70 @@ code {
 .neural-network-container:hover .neural-connections line {
   animation-duration: 2s;
   opacity: 0.8;
+}
+
+/* Mobile optimizations for neural network */
+@media (max-width: 768px) {
+  .neural-network-container {
+    width: 250px !important;
+    height: 250px !important;
+  }
+
+  .neuron {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .neuron:nth-child(3) {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  /* Reduce animation complexity on mobile */
+  .neural-connections line {
+    stroke-width: 1 !important;
+  }
+
+  .neuron::after {
+    animation-duration: 6s;
+  }
+
+  /* Disable some effects on mobile for performance */
+  .neural-network-container:hover .neuron {
+    filter: brightness(1.1);
+  }
+
+  .neural-network-container:hover .neural-connections line {
+    animation-duration: 3s;
+    opacity: 0.6;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .neural-network-container {
+    cursor: default;
+  }
+
+  .neuron {
+    cursor: default;
+    transition: transform 0.2s ease;
+  }
+
+  .neuron:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px currentColor;
+  }
+
+  .magic-button:hover {
+    transform: none;
+    animation: gradient 2s ease infinite;
+  }
+
+  .interactive-text:hover {
+    animation: none;
+    transform: none;
+  }
 }
 
 /* Add click ripple effect */
