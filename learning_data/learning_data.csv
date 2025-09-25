@@ -1,2 +1,0 @@
-age,gender,ever_married,hypertension,heart_disease,avg_glucose_level,bmi,work_type,residence_type,smoking_status,timestamp,data_hash,outcome_known
-55,Male,Yes,Yes,No,150,29,Private,Urban,smokes,2025-09-25T03:58:24.735508,88e541dbc2fd7b90e7b93de329c1dc44,False
