@@ -552,7 +552,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **This tool is for educational and research purposes only.** The stroke risk predictions provided by NeuroPredict should **NOT** be used as a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.
 
 ### 🔬 Research Use
-This system is intended for **research and educational purposes**. While we've achieved 88.56% accuracy on the training dataset, real-world performance may vary significantly.
+This system is intended for **research and educational purposes**. While we've achieved 95%+ accuracy on the training dataset, real-world performance may vary significantly.
 
 ### 👥 No Medical Advice
 The predictions and recommendations provided are **not medical advice**. Users should not make health decisions based on this tool's output without consulting healthcare professionals.
