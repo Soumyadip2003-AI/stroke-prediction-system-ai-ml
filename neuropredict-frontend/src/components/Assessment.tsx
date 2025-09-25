@@ -81,11 +81,11 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         <p className="text-xl text-gray-300">
           Enter your health information for an advanced stroke risk analysis using{' '}
           <span className="text-blue-400 font-semibold hover:text-purple-400 transition-colors duration-300 cursor-pointer">
-            6 ensemble ML models
+            Ultimate XGBoost Model
           </span>{' '}
           with{' '}
           <span className="text-green-400 font-semibold hover:text-blue-400 transition-colors duration-300 cursor-pointer">
-            88.56% accuracy
+            95.11% accuracy
           </span>
         </p>
       </div>

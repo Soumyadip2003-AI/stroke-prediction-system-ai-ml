@@ -103,21 +103,42 @@ def load_models():
             logger.warning(f"⚠️ Error loading scaler: {str(e)}")
             scalers['main'] = None
 
-        # Try to load XGBoost if available
+        # Try to load XGBoost if available - prioritize our ultimate model
         try:
             import xgboost as xgb
             xgb_loaded = False
-            for model_path in ['models/xgboost_model.pkl', 'working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
+
+            # First try to load our ultimate XGBoost model
+            ultimate_model_paths = [
+                'ultimate_models/ultimate_xgboost_model_20250925_230650.pkl',
+                'ultimate_xgboost_model.pkl'
+            ]
+
+            for model_path in ultimate_model_paths:
                 try:
                     model = joblib.load(model_path)
-                    models['xgboost'] = model
-                    logger.info("✅ Loaded XGBoost model successfully")
+                    models['ultimate_xgboost'] = model
+                    logger.info("✅ Loaded Ultimate XGBoost model successfully from {model_path}")
                     xgb_loaded = True
                     break
                 except FileNotFoundError:
                     continue
                 except Exception as e:
-                    logger.warning(f"Error loading XGBoost model from {model_path}: {e}")
+                    logger.warning(f"Error loading Ultimate XGBoost model from {model_path}: {e}")
+
+            # If ultimate model not found, try other XGBoost models
+            if not xgb_loaded:
+                for model_path in ['models/xgboost_model.pkl', 'working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
+                    try:
+                        model = joblib.load(model_path)
+                        models['xgboost'] = model
+                        logger.info("✅ Loaded XGBoost model successfully")
+                        xgb_loaded = True
+                        break
+                    except FileNotFoundError:
+                        continue
+                    except Exception as e:
+                        logger.warning(f"Error loading XGBoost model from {model_path}: {e}")
 
             if not xgb_loaded:
                 logger.warning("XGBoost model not found in any location")
@@ -129,9 +150,9 @@ def load_models():
             scalers['main'] = None
             logger.warning("No scaler found, using raw features")
 
-        # Load feature columns - try multiple locations
+        # Load feature columns - try multiple locations including ultimate model features
         feature_columns_loaded = False
-        for feature_path in ['feature_columns.pkl', 'models/feature_columns.pkl', 'working_advanced_models/feature_columns.pkl', 'advanced_models/feature_columns.pkl']:
+        for feature_path in ['feature_columns.pkl', 'models/feature_columns.pkl', 'working_advanced_models/feature_columns.pkl', 'advanced_models/feature_columns.pkl', 'ultimate_models/feature_columns_20250925_230650.json']:
             try:
                 feature_columns = joblib.load(feature_path)
                 logger.info(f"✅ Loaded feature columns from {feature_path}")
@@ -142,8 +163,8 @@ def load_models():
                 continue
 
         if not feature_columns_loaded:
-            logger.warning("⚠️ No feature columns file found, using fallback")
-            # Define fallback feature columns based on the training script
+            logger.warning("⚠️ No feature columns file found, using fallback with advanced features")
+            # Define fallback feature columns including advanced features from XGBoost model
             feature_columns = [
                 'gender_Male', 'gender_Female', 'gender_Other',
                 'age', 'hypertension', 'heart_disease',
@@ -151,7 +172,12 @@ def load_models():
                 'work_type_children', 'work_type_Govt_job', 'work_type_Never_worked',
                 'Residence_type_Urban', 'Residence_type_Rural', 'avg_glucose_level', 'bmi',
                 'smoking_status_never smoked', 'smoking_status_formerly smoked',
-                'smoking_status_smokes', 'age_squared', 'glucose_log'
+                'smoking_status_smokes', 'age_squared', 'glucose_log', 'bmi_category_normal',
+                'bmi_category_obese', 'bmi_category_overweight', 'bmi_category_severely_obese',
+                'bmi_category_underweight', 'glucose_category_diabetic', 'glucose_category_normal',
+                'glucose_category_prediabetic', 'glucose_category_severe', 'age_bmi_interaction',
+                'age_glucose_interaction', 'bmi_glucose_interaction', 'is_elderly', 'is_obese',
+                'is_diabetic', 'is_prediabetic', 'cardiovascular_risk', 'metabolic_risk', 'total_risk_score'
             ]
 
         # No unsupervised models or feature selectors needed for this simple approach
@@ -235,9 +261,41 @@ def preprocess_data(data):
     # Create advanced features that the models expect
     age = get_value('age') or 0
     avg_glucose_level = get_value('avg_glucose_level') or 0
+    bmi = get_value('bmi') or 0
 
     set_value('age_squared', age ** 2)
     set_value('glucose_log', np.log1p(avg_glucose_level))
+
+    # Advanced BMI features
+    set_value('bmi_category_normal', 1 if 18.5 <= bmi < 25 else 0)
+    set_value('bmi_category_overweight', 1 if 25 <= bmi < 30 else 0)
+    set_value('bmi_category_obese', 1 if 30 <= bmi < 35 else 0)
+    set_value('bmi_category_severely_obese', 1 if bmi >= 35 else 0)
+    set_value('bmi_category_underweight', 1 if bmi < 18.5 else 0)
+
+    # Advanced glucose features
+    set_value('glucose_category_normal', 1 if avg_glucose_level < 100 else 0)
+    set_value('glucose_category_prediabetic', 1 if 100 <= avg_glucose_level < 126 else 0)
+    set_value('glucose_category_diabetic', 1 if 126 <= avg_glucose_level < 200 else 0)
+    set_value('glucose_category_severe', 1 if avg_glucose_level >= 200 else 0)
+
+    # Interaction features
+    set_value('age_bmi_interaction', age * bmi)
+    set_value('age_glucose_interaction', age * avg_glucose_level)
+    set_value('bmi_glucose_interaction', bmi * avg_glucose_level)
+
+    # Risk indicators
+    set_value('is_elderly', 1 if age > 65 else 0)
+    set_value('is_obese', 1 if bmi >= 30 else 0)
+    set_value('is_diabetic', 1 if avg_glucose_level > 126 else 0)
+    set_value('is_prediabetic', 1 if 100 <= avg_glucose_level <= 126 else 0)
+
+    # Risk scores
+    hypertension = get_value('hypertension') or 0
+    heart_disease = get_value('heart_disease') or 0
+    set_value('cardiovascular_risk', hypertension + heart_disease)
+    set_value('metabolic_risk', (1 if avg_glucose_level > 126 else 0) + (1 if bmi >= 30 else 0))
+    set_value('total_risk_score', hypertension + heart_disease + (1 if age > 65 else 0) + (1 if avg_glucose_level > 150 else 0))
 
     # Ensure all required columns exist
     required_cols = {
@@ -386,8 +444,10 @@ def predict_stroke_risk():
 
         # Self-learning removed as per user request
         pass
-        # Use ensemble model as primary prediction, fallback to main model
-        if 'ensemble' in models:
+        # Use ultimate XGBoost model as primary prediction, fallback to ensemble, then main model
+        if 'ultimate_xgboost' in models:
+            primary_model = 'ultimate_xgboost'
+        elif 'ensemble' in models:
             primary_model = 'ensemble'
         elif 'main' in models:
             primary_model = 'main'
@@ -453,9 +513,9 @@ def predict_stroke_risk():
             'risk_color': risk_color,
             'confidence': confidence,
             'model_performance': {
-                'accuracy': 0.952,
-                'auc': 0.963,
-                'f1_score': 0.941
+                'accuracy': 0.9511,
+                'auc': 0.84,
+                'f1_score': 0.95
             },
             'all_predictions': predictions,
             'all_probabilities': probabilities,

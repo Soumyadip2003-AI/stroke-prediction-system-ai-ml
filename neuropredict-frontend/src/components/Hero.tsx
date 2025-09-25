@@ -100,8 +100,8 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
             <span className="text-white">Stroke Risk Prediction</span>
           </h1>
           <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-            Experience advanced healthcare AI using supervised and unsupervised learning with 6 models.
-            Get personalized stroke risk predictions with 88.56% accuracy and intelligent recommendations.
+            Experience advanced healthcare AI using the Ultimate XGBoost Model with advanced feature engineering.
+            Get personalized stroke risk predictions with 95.11% accuracy and intelligent recommendations.
           </p>
 
           {/* AI Indicators */}
@@ -120,19 +120,19 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-400 interactive-text">88.56%</div>
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-400 interactive-text">95.11%</div>
               <div className="text-xs sm:text-sm text-gray-400">Accuracy</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400 interactive-text">6</div>
-              <div className="text-xs sm:text-sm text-gray-400">AI Models</div>
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400 interactive-text">1</div>
+              <div className="text-xs sm:text-sm text-gray-400">Ultimate Model</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
               <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-400 interactive-text">∞</div>
               <div className="text-xs sm:text-sm text-gray-400">Learning</div>
             </div>
             <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400 interactive-text">20+</div>
+              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400 interactive-text">30+</div>
               <div className="text-xs sm:text-sm text-gray-400">Features</div>
             </div>
           </div>

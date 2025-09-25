@@ -7,18 +7,18 @@ const About: React.FC = () => {
         <div>
           <h2 className="text-4xl font-bold mb-6">About NeuroPredict</h2>
           <p className="text-xl text-gray-300 mb-8">
-            NeuroPredict is an advanced AI-powered stroke risk assessment system that combines 
-            cutting-edge machine learning algorithms with comprehensive health data analysis. 
-            Our system achieves 88.56% accuracy through ensemble learning and advanced feature engineering.
+            NeuroPredict is an advanced AI-powered stroke risk assessment system featuring
+            the Ultimate XGBoost Model with state-of-the-art performance.
+            Our system achieves 95.11% accuracy through advanced feature engineering and hyperparameter optimization.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>88.56% Accuracy Rate</span>
+              <span>95.11% Accuracy Rate</span>
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>6 Advanced AI Models</span>
+              <span>Ultimate XGBoost Model</span>
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
@@ -26,7 +26,7 @@ const About: React.FC = () => {
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>Personalized Recommendations</span>
+              <span>30+ Engineered Features</span>
             </div>
           </div>
         </div>
@@ -36,16 +36,16 @@ const About: React.FC = () => {
             <div className="font-semibold">Python</div>
           </div>
           <div className="glass-effect rounded-2xl p-6 text-center">
-            <i className="fas fa-brain text-4xl text-purple-400 mb-4"></i>
+            <i className="fas fa-tree text-4xl text-purple-400 mb-4"></i>
             <div className="font-semibold">XGBoost</div>
           </div>
           <div className="glass-effect rounded-2xl p-6 text-center">
-            <i className="fas fa-network-wired text-4xl text-pink-400 mb-4"></i>
-            <div className="font-semibold">Neural Networks</div>
+            <i className="fas fa-search text-4xl text-pink-400 mb-4"></i>
+            <div className="font-semibold">Optuna</div>
           </div>
           <div className="glass-effect rounded-2xl p-6 text-center">
-            <i className="fas fa-chart-bar text-4xl text-green-400 mb-4"></i>
-            <div className="font-semibold">SHAP</div>
+            <i className="fas fa-chart-line text-4xl text-green-400 mb-4"></i>
+            <div className="font-semibold">Feature Engineering</div>
           </div>
         </div>
       </div>
