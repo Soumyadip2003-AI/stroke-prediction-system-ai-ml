@@ -310,7 +310,6 @@ def preprocess_data(data):
 
     # Convert to numpy array if pandas is not available
     if not PANDAS_AVAILABLE:
-        import numpy as np
         # Create feature array from dict
         feature_list = []
         for key in feature_columns:
