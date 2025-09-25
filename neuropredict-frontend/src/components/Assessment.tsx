@@ -58,33 +58,14 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         console.log('API response:', result);
         onComplete(result);
       } else {
-        console.log('API error, falling back to simulation');
-        // Fallback to simulated prediction
-        const simulatedResult = {
-          risk_percentage: Math.random() * 100,
-          risk_category: 'Moderate Risk',
-          risk_color: '#F59E0B',
-          confidence: 'High',
-          health_analysis: [],
-          recommendations: []
-        };
-        console.log('Simulated result:', simulatedResult);
-        onComplete(simulatedResult);
+        console.error('API error, showing error message');
+        alert('Prediction service is temporarily unavailable. Please try again later.');
+        setIsSubmitting(false);
+        return;
       }
     } catch (error) {
       console.error('Prediction error:', error);
-      // Fallback to simulated prediction
-      const simulatedResult = {
-        risk_percentage: Math.random() * 100,
-        risk_category: 'Moderate Risk',
-        risk_color: '#F59E0B',
-        confidence: 'High',
-        health_analysis: [],
-        recommendations: []
-      };
-      console.log('Error fallback result:', simulatedResult);
-      onComplete(simulatedResult);
-    } finally {
+      alert('Network error. Please check your connection and try again.');
       setIsSubmitting(false);
     }
   };
