@@ -37,7 +37,7 @@ def load_models():
     try:
         # Load ensemble model (try multiple locations)
         ensemble_loaded = False
-        for ensemble_path in ['working_advanced_models/ensemble_model.pkl', 'advanced_models/ensemble_model.pkl', 'voting_ensemble.pkl']:
+        for ensemble_path in ['models/voting_ensemble.pkl', 'working_advanced_models/ensemble_model.pkl', 'advanced_models/ensemble_model.pkl', 'voting_ensemble.pkl']:
             try:
                 models['ensemble'] = joblib.load(ensemble_path)
                 logger.info(f"Loaded ensemble model from {ensemble_path}")
@@ -54,8 +54,8 @@ def load_models():
         for name in model_names:
             model_loaded = False
 
-            # Try new advanced models first
-            for model_path in [f'working_advanced_models/{name}_model.pkl', f'advanced_models/{name}_model.pkl', f'{name}_model.pkl']:
+            # Try multiple locations including models directory (Railway extracts zip here)
+            for model_path in [f'models/{name}_model.pkl', f'working_advanced_models/{name}_model.pkl', f'advanced_models/{name}_model.pkl', f'{name}_model.pkl']:
                 try:
                     model = joblib.load(model_path)
                     models[name] = model
@@ -74,7 +74,7 @@ def load_models():
         try:
             import xgboost as xgb
             xgb_loaded = False
-            for model_path in ['working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
+            for model_path in ['models/xgboost_model.pkl', 'working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
                 try:
                     model = joblib.load(model_path)
                     models['xgboost'] = model
@@ -96,7 +96,7 @@ def load_models():
         
         # Load scaler (optional) - try multiple locations
         scaler_loaded = False
-        for scaler_path in ['scalers.pkl', 'scaler.pkl']:
+        for scaler_path in ['scalers.pkl', 'scaler.pkl', 'models/scalers.pkl', 'models/scaler.pkl']:
             try:
                 scalers['main'] = joblib.load(scaler_path).get('robust')
                 logger.info(f"Loaded scaler from {scaler_path}")
@@ -108,10 +108,25 @@ def load_models():
             scalers['main'] = None
             logger.warning("No scaler found, using raw features")
 
-        # Define the expected features (exactly what we create in preprocessing)
-        feature_columns = [
-            'gender_Male', 'gender_Female', 'gender_Other',
-            'age', 'hypertension', 'heart_disease',
+        # Load feature columns - try multiple locations
+        feature_columns_loaded = False
+        for fc_path in ['feature_columns.pkl', 'models/feature_columns.pkl']:
+            try:
+                feature_columns = joblib.load(fc_path)
+                logger.info(f"Loaded feature columns from {fc_path}")
+                feature_columns_loaded = True
+                break
+            except Exception:
+                continue
+        if not feature_columns_loaded:
+            logger.error("Feature columns not found - models won't work properly")
+            feature_columns = []
+
+        # Define the expected features (fallback if feature_columns.pkl not found)
+        if not feature_columns_loaded:
+            feature_columns = [
+                'gender_Male', 'gender_Female', 'gender_Other',
+                'age', 'hypertension', 'heart_disease',
             'ever_married_Yes', 'work_type_Private', 'work_type_Self-employed',
             'work_type_children', 'work_type_Govt_job', 'work_type_Never_worked',
             'Residence_type_Urban', 'avg_glucose_level', 'bmi',
