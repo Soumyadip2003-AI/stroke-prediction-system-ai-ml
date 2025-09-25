@@ -8,7 +8,13 @@ the advanced machine learning models for stroke risk prediction.
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import pandas as pd
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    print("⚠️ Pandas not available - using numpy only")
+
 import numpy as np
 import joblib
 import os
@@ -167,40 +173,71 @@ def load_models():
 
 def preprocess_data(data):
     """Advanced preprocessing that creates proper features for the models."""
-    # Create DataFrame
-    df = pd.DataFrame([data])
+    # Create DataFrame if pandas is available, otherwise use dict
+    if PANDAS_AVAILABLE:
+        df = pd.DataFrame([data])
+    else:
+        df = data  # Use data directly as dict
 
-    # Normalize field names
-    if 'residence_type' in df.columns and 'Residence_type' not in df.columns:
-        df.rename(columns={'residence_type': 'Residence_type'}, inplace=True)
+    # Helper function to safely get values from either DataFrame or dict
+    def get_value(key):
+        if PANDAS_AVAILABLE and hasattr(df, 'columns'):
+            return df[key].iloc[0] if key in df.columns else None
+        else:
+            return df.get(key)
 
-    # Convert data types
+    def set_value(key, value):
+        if PANDAS_AVAILABLE and hasattr(df, 'columns'):
+            df[key] = value
+        else:
+            df[key] = value
+
+    # Normalize field names (pandas-specific)
+    if PANDAS_AVAILABLE and hasattr(df, 'columns'):
+        if 'residence_type' in df.columns and 'Residence_type' not in df.columns:
+            df.rename(columns={'residence_type': 'Residence_type'}, inplace=True)
+
+    # Convert data types and normalize values
     numeric_cols = ['age', 'avg_glucose_level', 'bmi']
     for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        value = get_value(col)
+        if value is not None:
+            try:
+                set_value(col, float(value))
+            except (ValueError, TypeError):
+                set_value(col, 0.0)
 
     # Convert Yes/No to 1/0
     binary_cols = ['hypertension', 'heart_disease', 'ever_married']
     for col in binary_cols:
-        if col in df.columns:
-            df[col] = df[col].astype(str).str.lower().map({'yes': 1, 'no': 0}).fillna(0).astype(int)
+        value = get_value(col)
+        if value is not None:
+            if str(value).lower() in ['yes', '1', 'true']:
+                set_value(col, 1)
+            else:
+                set_value(col, 0)
 
     # Normalize categorical values
-    if 'smoking_status' in df.columns:
-        df['smoking_status'] = df['smoking_status'].astype(str).str.strip().str.lower()
+    smoking_status = get_value('smoking_status')
+    if smoking_status is not None:
+        set_value('smoking_status', str(smoking_status).strip().lower())
 
-    if 'work_type' in df.columns:
+    work_type = get_value('work_type')
+    if work_type is not None:
         work_mapping = {
             'private': 'Private', 'self-employed': 'Self-employed',
             'children': 'children', 'govt_job': 'Govt_job',
             'never_worked': 'Never_worked'
         }
-        df['work_type'] = df['work_type'].astype(str).str.lower().map(work_mapping).fillna(df['work_type'])
+        normalized_work = work_mapping.get(str(work_type).lower(), work_type)
+        set_value('work_type', normalized_work)
 
     # Create advanced features that the models expect
-    df['age_squared'] = df['age'] ** 2
-    df['glucose_log'] = np.log1p(df['avg_glucose_level'])
+    age = get_value('age') or 0
+    avg_glucose_level = get_value('avg_glucose_level') or 0
+
+    set_value('age_squared', age ** 2)
+    set_value('glucose_log', np.log1p(avg_glucose_level))
 
     # Ensure all required columns exist
     required_cols = {
@@ -217,50 +254,72 @@ def preprocess_data(data):
     }
 
     for col, default_val in required_cols.items():
-        if col not in df.columns:
-            df[col] = default_val
+        if get_value(col) is None:
+            set_value(col, default_val)
 
     # Create one-hot encoded features (exactly what models expect)
-    features_df = pd.DataFrame(index=df.index)
+    if PANDAS_AVAILABLE:
+        features_df = pd.DataFrame(index=df.index)
+    else:
+        features_df = {}
+
+    # Helper function to set feature values
+    def set_feature(key, value):
+        if PANDAS_AVAILABLE:
+            features_df[key] = value
+        else:
+            features_df[key] = value
 
     # Gender encoding
-    features_df['gender_Male'] = (df['gender'] == 'Male').astype(int)
-    features_df['gender_Female'] = (df['gender'] == 'Female').astype(int)
-    features_df['gender_Other'] = (df['gender'] == 'Other').astype(int)
+    gender = get_value('gender') or 'Male'
+    set_feature('gender_Male', 1 if gender == 'Male' else 0)
+    set_feature('gender_Female', 1 if gender == 'Female' else 0)
+    set_feature('gender_Other', 1 if gender == 'Other' else 0)
 
     # Age and numeric features
-    features_df['age'] = df['age']
-    features_df['hypertension'] = df['hypertension']
-    features_df['heart_disease'] = df['heart_disease']
+    set_feature('age', age)
+    set_feature('hypertension', get_value('hypertension') or 0)
+    set_feature('heart_disease', get_value('heart_disease') or 0)
 
     # Ever married encoding
-    features_df['ever_married_Yes'] = (df['ever_married'] == 1).astype(int)
+    set_feature('ever_married_Yes', 1 if get_value('ever_married') == 1 else 0)
 
     # Work type encoding
     work_types = ['Private', 'Self-employed', 'children', 'Govt_job', 'Never_worked']
+    work_val = get_value('work_type') or 'Private'
     for work in work_types:
-        features_df[f'work_type_{work}'] = (df['work_type'] == work).astype(int)
+        set_feature(f'work_type_{work}', 1 if work_val == work else 0)
 
     # Residence type encoding
-    features_df['Residence_type_Urban'] = (df['Residence_type'] == 'Urban').astype(int)
+    residence = get_value('Residence_type') or 'Urban'
+    set_feature('Residence_type_Urban', 1 if residence == 'Urban' else 0)
 
     # Numeric features
-    features_df['avg_glucose_level'] = df['avg_glucose_level']
-    features_df['bmi'] = df['bmi']
+    set_feature('avg_glucose_level', avg_glucose_level)
+    set_feature('bmi', get_value('bmi') or 0)
 
     # Smoking status encoding
     smoking_types = ['never smoked', 'formerly smoked', 'smokes']
+    smoking_val = get_value('smoking_status') or 'never smoked'
     for smoke in smoking_types:
-        features_df[f'smoking_status_{smoke}'] = (df['smoking_status'] == smoke).astype(int)
+        set_feature(f'smoking_status_{smoke}', 1 if smoking_val == smoke else 0)
 
     # Derived features
-    features_df['age_squared'] = df['age_squared']
-    features_df['glucose_log'] = df['glucose_log']
+    set_feature('age_squared', get_value('age_squared') or 0)
+    set_feature('glucose_log', get_value('glucose_log') or 0)
 
-    # Ensure all values are numeric and fill NaN
-    features_df = features_df.fillna(0).astype(float)
-
-    return features_df
+    # Convert to numpy array if pandas is not available
+    if not PANDAS_AVAILABLE:
+        import numpy as np
+        # Create feature array from dict
+        feature_list = []
+        for key in feature_columns:
+            feature_list.append(features_df.get(key, 0.0))
+        return np.array([feature_list])
+    else:
+        # Ensure all values are numeric and fill NaN
+        features_df = features_df.fillna(0).astype(float)
+        return features_df
 
 # Removed build_enhanced_features function - not needed for current implementation
 
@@ -622,9 +681,11 @@ def get_feature_info():
 
 # Self-learning endpoints removed as per user request
 
+# Load models when module is imported (for both direct execution and gunicorn)
+models_loaded = load_models()
+
 if __name__ == '__main__':
-    # Load models on startup
-    if load_models():
+    if models_loaded:
         logger.info("Starting NeuroPredict API server...")
         app.run(debug=True, host='0.0.0.0', port=5002)
     else:
