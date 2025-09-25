@@ -4,7 +4,7 @@
 ![Flask Backend](https://img.shields.io/badge/Flask-Backend-green)
 ![Mobile Responsive](https://img.shields.io/badge/Mobile-Responsive-purple)
 ![Interactive Animations](https://img.shields.io/badge/Interactive-Animations-orange)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+
 
 ## 🎯 Overview
 
