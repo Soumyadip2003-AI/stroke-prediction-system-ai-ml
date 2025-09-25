@@ -158,6 +158,7 @@ function App() {
         let mouseSpeed = 0;
         let lastMouseX = 0;
         let lastMouseY = 0;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         let clickCount = 0;
         const canvas = document.querySelector('#particles-js canvas');
 
@@ -167,6 +168,7 @@ function App() {
             const rect = canvas.getBoundingClientRect();
 
             // Calculate mouse speed for dynamic effects
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const currentTime = Date.now();
             mouseSpeed = Math.sqrt(
               Math.pow(mouseEvent.clientX - lastMouseX, 2) +
