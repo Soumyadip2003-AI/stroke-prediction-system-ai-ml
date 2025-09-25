@@ -59,13 +59,15 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         onComplete(result);
       } else {
         console.error('API error, showing error message');
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         alert('Prediction service is temporarily unavailable. Please try again later.');
-        setIsSubmitting(false);
-        return;
       }
     } catch (error) {
       console.error('Prediction error:', error);
       alert('Network error. Please check your connection and try again.');
+    } finally {
+      // Always reset the submitting state
       setIsSubmitting(false);
     }
   };

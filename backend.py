@@ -360,7 +360,13 @@ def predict_stroke_risk():
         processed = preprocess_data(data)
 
         # The processed data should now have exactly 20 features
-        X_final = processed.values
+        # Handle both pandas DataFrame and numpy array cases
+        if hasattr(processed, 'values'):
+            # pandas DataFrame case
+            X_final = processed.values
+        else:
+            # numpy array case
+            X_final = processed
 
         # Get predictions from all available models
         predictions = {}
