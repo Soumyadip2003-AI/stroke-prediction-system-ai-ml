@@ -56,7 +56,7 @@ def load_models():
 
         # Load ensemble model (try multiple locations)
         ensemble_loaded = False
-        for ensemble_path in ['advanced_stroke_model_ensemble.pkl', 'working_advanced_models/ensemble_model.pkl', 'advanced_models/ensemble_model.pkl', 'voting_ensemble.pkl']:
+        for ensemble_path in ['advanced_stroke_model_ensemble.pkl', 'models/voting_ensemble.pkl', 'working_advanced_models/ensemble_model.pkl', 'advanced_models/ensemble_model.pkl', 'voting_ensemble.pkl']:
             try:
                 models['ensemble'] = joblib.load(ensemble_path)
                 logger.info(f"Loaded ensemble model from {ensemble_path}")
@@ -73,8 +73,8 @@ def load_models():
         for name in model_names:
             model_loaded = False
 
-            # Try advanced model files first
-            for model_path in [f'advanced_stroke_model_{name}.pkl', f'working_advanced_models/{name}_model.pkl', f'advanced_models/{name}_model.pkl', f'{name}_model.pkl']:
+            # Try multiple locations including models directory and advanced model files
+            for model_path in [f'models/{name}_model.pkl', f'advanced_stroke_model_{name}.pkl', f'working_advanced_models/{name}_model.pkl', f'advanced_models/{name}_model.pkl', f'{name}_model.pkl']:
                 try:
                     model = joblib.load(model_path)
                     models[name] = model
@@ -92,17 +92,51 @@ def load_models():
         # Load scaler
         try:
             scalers['main'] = joblib.load('scaler.pkl')
-            logger.info("Loaded scaler successfully")
+            logger.info("✅ Loaded scaler successfully")
         except Exception as e:
-            logger.warning(f"Error loading scaler: {str(e)}")
+            logger.warning(f"⚠️ Error loading scaler: {str(e)}")
             scalers['main'] = None
 
-        # Load feature columns
+        # Try to load XGBoost if available
         try:
-            feature_columns = joblib.load('feature_columns.pkl')
-            logger.info("Loaded feature columns successfully")
+            import xgboost as xgb
+            xgb_loaded = False
+            for model_path in ['models/xgboost_model.pkl', 'working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
+                try:
+                    model = joblib.load(model_path)
+                    models['xgboost'] = model
+                    logger.info("✅ Loaded XGBoost model successfully")
+                    xgb_loaded = True
+                    break
+                except FileNotFoundError:
+                    continue
+                except Exception as e:
+                    logger.warning(f"Error loading XGBoost model from {model_path}: {e}")
+
+            if not xgb_loaded:
+                logger.warning("XGBoost model not found in any location")
+        except ImportError as e:
+            logger.warning(f"XGBoost not available, skipping XGBoost model: {e}")
         except Exception as e:
-            logger.warning(f"Error loading feature columns: {str(e)}")
+            logger.error(f"XGBoost Library error: {e}")
+            logger.warning("Skipping XGBoost model due to library issues")
+            scalers['main'] = None
+            logger.warning("No scaler found, using raw features")
+
+        # Load feature columns - try multiple locations
+        feature_columns_loaded = False
+        for feature_path in ['feature_columns.pkl', 'models/feature_columns.pkl', 'working_advanced_models/feature_columns.pkl', 'advanced_models/feature_columns.pkl']:
+            try:
+                feature_columns = joblib.load(feature_path)
+                logger.info(f"✅ Loaded feature columns from {feature_path}")
+                feature_columns_loaded = True
+                break
+            except Exception as e:
+                logger.debug(f"Could not load feature columns from {feature_path}: {e}")
+                continue
+
+        if not feature_columns_loaded:
+            logger.warning("⚠️ No feature columns file found, using fallback")
             # Define fallback feature columns based on the training script
             feature_columns = [
                 'gender_Male', 'gender_Female', 'gender_Other',
@@ -119,11 +153,11 @@ def load_models():
         feature_selector = None
 
         # Check if we have at least one model loaded
-        if len(models) == 0:
-            logger.error("No models loaded! Please ensure model files are available.")
+        if not models:
+            logger.error("❌ No models loaded! Please ensure model files are available.")
             return False
 
-        logger.info(f"Successfully loaded {len(models)} models: {list(models.keys())}")
+        logger.info(f"✅ Successfully loaded {len(models)} models: {list(models.keys())}")
         logger.info("All models loaded successfully!")
         return True
 
@@ -287,7 +321,6 @@ def predict_stroke_risk():
 
         # Self-learning removed as per user request
         pass
-
         # Use ensemble model as primary prediction, fallback to main model
         if 'ensemble' in models:
             primary_model = 'ensemble'
@@ -299,7 +332,6 @@ def predict_stroke_risk():
         if primary_model is None:
             logger.error("No valid primary model found")
             return jsonify({'error': 'No valid models available for prediction'}), 500
-
         primary_prediction = predictions.get(primary_model, 0)
         primary_probability = probabilities.get(primary_model, 0.0)
         

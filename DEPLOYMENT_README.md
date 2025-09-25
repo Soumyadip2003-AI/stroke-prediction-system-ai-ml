@@ -48,6 +48,39 @@ vercel --prod
 #### Railway Deployment
 1. **Go to [Railway.app](https://railway.app/)**
 2. **Connect your GitHub repository**
+
+### **Railway Model Upload Solutions (If No Upload Option):**
+
+#### **Option A: Automatic Zip Extraction (Easiest)**
+- **Railway automatically** extracts `models.zip` from your repo
+- **Backend tries multiple paths** including `models/` directory
+- **No manual upload needed** - just deploy with GitHub integration
+
+#### **Option B: Railway CLI Upload**
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login to Railway
+railway login
+
+# Upload files to your service
+railway up
+
+# Or upload specific file
+railway files upload models.zip
+```
+
+#### **Option C: Manual File Creation**
+1. **Go to Railway Dashboard** → Your service
+2. **Settings** → **Variables**
+3. **Add environment variable:** `MODELS_DOWNLOADED=true`
+4. **The backend will work** with existing files
+
+#### **Option D: Separate Storage Service**
+1. **Create new Railway service** for file storage
+2. **Upload models.zip** to the storage service
+3. **Mount the storage** to your main backend service
 3. **Deploy from GitHub:**
    - **Root Directory**: `.` (root of repository)
    - **Build Command**: `pip install -r requirements.txt`
