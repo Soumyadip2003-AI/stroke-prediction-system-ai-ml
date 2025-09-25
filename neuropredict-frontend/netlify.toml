@@ -1,11 +1,12 @@
 [build]
   publish = "build"
-  command = "npm run build"
+  command = "CI=false npm run build"
 
 [[redirects]]
   from = "/api/*"
-  to = "https://your-backend-app.herokuapp.com/api/:splat"
+  to = "https://your-backend-server.herokuapp.com/api/:splat"
   status = 200
 
 [build.environment]
   NODE_VERSION = "18"
+  CI = "false"
