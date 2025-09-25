@@ -114,7 +114,12 @@ def load_models():
         # No unsupervised models or feature selectors needed for this simple approach
         unsupervised = {}
         feature_selector = None
-        
+
+        # Check if we have at least one model loaded
+        if not models:
+            logger.error("No models were loaded successfully. Cannot proceed.")
+            return False
+
         logger.info("All models loaded successfully!")
         return True
         
@@ -275,6 +280,9 @@ def predict_stroke_risk():
         pass
         
         # Use ensemble model as primary prediction
+        if not models:
+            raise ValueError("No models loaded. Please ensure model files are available.")
+
         primary_model = 'ensemble' if 'ensemble' in models else list(models.keys())[0]
         primary_prediction = predictions.get(primary_model, 0)
         primary_probability = probabilities.get(primary_model, 0.0)
