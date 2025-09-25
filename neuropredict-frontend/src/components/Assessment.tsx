@@ -85,7 +85,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
           </span>{' '}
           with{' '}
           <span className="text-green-400 font-semibold hover:text-blue-400 transition-colors duration-300 cursor-pointer">
-            95.11% accuracy
+            95%+ accuracy
           </span>
         </p>
       </div>

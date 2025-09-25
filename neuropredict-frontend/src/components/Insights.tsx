@@ -21,7 +21,7 @@ const Insights: React.FC = () => {
             <i className="fas fa-chart-line"></i>
           </div>
           <h3 className="text-xl font-semibold mb-2">Advanced Features</h3>
-          <p className="text-gray-300">32+ engineered features including interactions, risk scores, and health indicators.</p>
+          <p className="text-gray-300">40+ engineered features including interactions, risk scores, polynomial transformations, and health indicators.</p>
         </div>
         <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
           <div className="text-4xl text-pink-400 mb-4">

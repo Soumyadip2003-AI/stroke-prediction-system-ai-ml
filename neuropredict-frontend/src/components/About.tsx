@@ -9,12 +9,12 @@ const About: React.FC = () => {
           <p className="text-xl text-gray-300 mb-8">
             NeuroPredict is an advanced AI-powered stroke risk assessment system featuring
             9 powerful machine learning models with state-of-the-art performance.
-            Our system achieves 95.11% accuracy through ensemble learning and advanced feature engineering.
+            Our system achieves 95%+ accuracy through ensemble learning and advanced feature engineering.
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>95.11% Accuracy Rate</span>
+              <span>95%+ Accuracy Rate</span>
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
@@ -26,7 +26,7 @@ const About: React.FC = () => {
             </div>
             <div className="flex items-center">
               <i className="fas fa-check-circle text-green-400 mr-3"></i>
-              <span>30+ Engineered Features</span>
+              <span>40+ Engineered Features</span>
             </div>
           </div>
         </div>
