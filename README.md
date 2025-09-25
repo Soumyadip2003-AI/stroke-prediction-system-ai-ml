@@ -503,9 +503,6 @@ We welcome contributions to NeuroPredict! Here's how you can help:
 - Specify **device/browser** information for UI issues
 - Add **screenshots/videos** for visual problems
 
-## 📄 License
-
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
