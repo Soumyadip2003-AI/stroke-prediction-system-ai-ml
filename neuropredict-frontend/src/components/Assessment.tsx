@@ -92,8 +92,19 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">AI-Powered Stroke Risk Assessment</h2>
-        <p className="text-xl text-gray-300">Enter your health information for an advanced stroke risk analysis using 6 ensemble ML models with 88.56% accuracy</p>
+        <h2 className="text-4xl font-bold mb-4 hover:text-blue-400 transition-colors duration-300 cursor-pointer">
+          AI-Powered Stroke Risk Assessment
+        </h2>
+        <p className="text-xl text-gray-300">
+          Enter your health information for an advanced stroke risk analysis using{' '}
+          <span className="text-blue-400 font-semibold hover:text-purple-400 transition-colors duration-300 cursor-pointer">
+            6 ensemble ML models
+          </span>{' '}
+          with{' '}
+          <span className="text-green-400 font-semibold hover:text-blue-400 transition-colors duration-300 cursor-pointer">
+            88.56% accuracy
+          </span>
+        </p>
       </div>
 
       <div className="glass-effect rounded-2xl p-8">
@@ -345,10 +356,24 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed z-10 relative"
+              className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed z-10 relative overflow-hidden group ${
+                isSubmitting ? 'animate-pulse' : 'hover:animate-bounce'
+              }`}
             >
-              <i className="fas fa-brain mr-2"></i>
-              <span>{isSubmitting ? 'Analyzing...' : 'Get AI Stroke Risk Assessment'}</span>
+              {/* Button ripple effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
+
+              <div className="relative flex items-center justify-center">
+                <i className={`fas fa-brain mr-2 transition-transform duration-300 ${isSubmitting ? 'animate-spin' : 'group-hover:rotate-12'}`}></i>
+                <span className="relative">
+                  {isSubmitting ? '🧠 Analyzing with AI...' : '🚀 Get AI Stroke Risk Assessment'}
+                </span>
+                {!isSubmitting && (
+                  <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    ✨
+                  </span>
+                )}
+              </div>
             </button>
           )}
         </div>
