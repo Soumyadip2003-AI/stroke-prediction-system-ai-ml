@@ -149,7 +149,7 @@ def load_models():
                 'age', 'hypertension', 'heart_disease',
                 'ever_married_Yes', 'work_type_Private', 'work_type_Self-employed',
                 'work_type_children', 'work_type_Govt_job', 'work_type_Never_worked',
-                'Residence_type_Urban', 'avg_glucose_level', 'bmi',
+                'Residence_type_Urban', 'Residence_type_Rural', 'avg_glucose_level', 'bmi',
                 'smoking_status_never smoked', 'smoking_status_formerly smoked',
                 'smoking_status_smokes', 'age_squared', 'glucose_log'
             ]
@@ -293,6 +293,7 @@ def preprocess_data(data):
     # Residence type encoding
     residence = get_value('Residence_type') or 'Urban'
     set_feature('Residence_type_Urban', 1 if residence == 'Urban' else 0)
+    set_feature('Residence_type_Rural', 1 if residence == 'Rural' else 0)
 
     # Numeric features
     set_feature('avg_glucose_level', avg_glucose_level)
