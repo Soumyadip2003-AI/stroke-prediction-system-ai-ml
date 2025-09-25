@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
             <h4 className="font-semibold mb-4">Contact</h4>
             <div className="space-y-2">
               <p className="text-gray-400"><i className="fas fa-envelope mr-2"></i> soumyadip.0202@gmail.com</p>
-              <p className="text-gray-400"><i className="fas fa-phone mr-2"></i> +1 (555) 123-4567</p>
+              <p className="text-gray-400"><i className="fas fa-phone mr-2"></i> +91 7003153300</p>
             </div>
           </div>
         </div>
