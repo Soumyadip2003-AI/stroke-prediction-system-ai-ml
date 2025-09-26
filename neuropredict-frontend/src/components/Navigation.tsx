@@ -32,7 +32,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     };
 
     // Close mobile menu when clicking outside
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
         setIsMobileMenuOpen(false);
       }
@@ -45,14 +45,37 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
       }
     };
 
+    // Handle touch events for mobile devices
+    const handleTouchStart = (event: TouchEvent) => {
+      if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    // Prevent body scrolling when mobile menu is open
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
     window.addEventListener('resize', handleResize);
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('keydown', handleEscapeKey);
 
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
     };
   }, [isMobileMenuOpen]);
 

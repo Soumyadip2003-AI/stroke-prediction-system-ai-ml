@@ -22,10 +22,11 @@ function App() {
     script.src = 'https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js';
     script.onload = () => {
       if ((window as any).particlesJS) {
-        // Detect mobile device and adjust particle count
-        const isMobile = window.innerWidth <= 768;
-        const particleCount = isMobile ? 80 : 150;
-        const particleDensity = isMobile ? 600 : 1000;
+        // Enhanced mobile detection
+        const isMobile = window.innerWidth <= 768 ||
+                        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const particleCount = isMobile ? 50 : 100;  // Reduced for mobile
+        const particleDensity = isMobile ? 400 : 800;  // Reduced for mobile
 
         (window as any).particlesJS('particles-js', {
           particles: {
@@ -88,14 +89,14 @@ function App() {
             },
             move: {
               enable: true,
-              speed: 2,
+              speed: isMobile ? 1 : 2,  // Slower on mobile
               direction: 'none',
               random: true,
               straight: false,
               out_mode: 'bounce',
               bounce: true,
               attract: {
-                enable: true,
+                enable: false,  // Disable on mobile for performance
                 rotateX: 800,
                 rotateY: 1600
               }
@@ -105,7 +106,7 @@ function App() {
             detect_on: 'canvas',
             events: {
               onhover: {
-                enable: true,
+                enable: isMobile ? false : true,  // Disable on mobile for performance
                 mode: ['grab', 'bubble', 'repulse']
               },
               onclick: {
@@ -114,7 +115,7 @@ function App() {
               },
               ondiv: {
                 elementId: 'neural-network-container',
-                enable: true,
+                enable: isMobile ? false : true,  // Disable on mobile for performance
                 mode: ['bubble', 'grab']
               },
               resize: true
