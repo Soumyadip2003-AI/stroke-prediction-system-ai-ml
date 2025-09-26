@@ -18,7 +18,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
   ];
 
   const toggleMobileMenu = () => {
+    console.log('Mobile menu toggle clicked, current state:', isMobileMenuOpen);
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    console.log('Mobile menu new state:', !isMobileMenuOpen);
   };
 
   const closeMobileMenu = () => {
@@ -36,6 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     // Close mobile menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
+        console.log('Closing mobile menu due to click outside');
         setIsMobileMenuOpen(false);
       }
     };
@@ -43,6 +46,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     // Close mobile menu on escape key
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isMobileMenuOpen) {
+        console.log('Closing mobile menu due to escape key');
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    // Handle touch events for mobile devices
+    const handleTouchStart = (event: TouchEvent) => {
+      if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
+        console.log('Closing mobile menu due to touch outside');
         setIsMobileMenuOpen(false);
       }
     };
@@ -50,24 +62,29 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     // Prevent body scrolling when mobile menu is open
     if (isMobileMenuOpen) {
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('mobile-menu-open');
     } else {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('mobile-menu-open');
     }
 
     window.addEventListener('resize', handleResize);
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscapeKey);
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
+      document.removeEventListener('touchstart', handleTouchStart);
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('mobile-menu-open');
     };
   }, [isMobileMenuOpen]);
 
   return (
-    <nav className="fixed top-0 w-full z-50 glass-effect">
+    <nav className="fixed top-0 w-full z-[100] glass-effect">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
@@ -94,20 +111,29 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
           <div className="md:hidden">
             <button
               onClick={toggleMobileMenu}
-              className="text-gray-300 hover:text-white focus:outline-none focus:text-white transition-colors duration-300"
+              className="mobile-menu-button p-2 text-gray-300 hover:text-white focus:outline-none focus:text-white transition-all duration-300 rounded-md hover:bg-gray-700/30 active:bg-gray-600/50"
               aria-label="Toggle mobile menu"
+              style={{
+                touchAction: 'manipulation',
+                minHeight: '44px',
+                minWidth: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
               <FontAwesomeIcon
                 icon={isMobileMenuOpen ? faTimes : faBars}
                 className="text-xl transition-transform duration-300"
+                style={{ pointerEvents: 'none' }}
               />
             </button>
           </div>
         </div>
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-gray-900/95 backdrop-blur-sm border-t border-gray-700">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden absolute top-full left-0 w-full bg-gray-900/98 backdrop-blur-md border-t border-gray-700 shadow-lg">
+            <div className="px-4 pt-4 pb-6 space-y-2 max-h-[80vh] overflow-y-auto">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -115,11 +141,12 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
                     onNavigate(item.id);
                     closeMobileMenu();
                   }}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-base font-medium transition-colors duration-300 ${
+                  className={`mobile-nav-item block w-full text-left px-4 py-3 rounded-lg text-lg font-medium transition-all duration-300 ${
                     currentSection === item.id
-                      ? 'text-white bg-blue-600/50'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                      ? 'text-white bg-blue-600/70 shadow-md'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/60 active:bg-gray-600/60'
                   }`}
+                  style={{ touchAction: 'manipulation' }}
                 >
                   {item.label}
                 </button>
