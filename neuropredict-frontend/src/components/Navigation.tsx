@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 interface NavigationProps {
   currentSection: string;
@@ -18,9 +16,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
   ];
 
   const toggleMobileMenu = () => {
-    console.log('Mobile menu toggle clicked, current state:', isMobileMenuOpen);
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    console.log('Mobile menu new state:', !isMobileMenuOpen);
   };
 
   const closeMobileMenu = () => {
@@ -38,7 +34,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     // Close mobile menu when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
-        console.log('Closing mobile menu due to click outside');
         setIsMobileMenuOpen(false);
       }
     };
@@ -46,45 +41,23 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     // Close mobile menu on escape key
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isMobileMenuOpen) {
-        console.log('Closing mobile menu due to escape key');
         setIsMobileMenuOpen(false);
       }
     };
-
-    // Handle touch events for mobile devices
-    const handleTouchStart = (event: TouchEvent) => {
-      if (isMobileMenuOpen && !(event.target as Element).closest('nav')) {
-        console.log('Closing mobile menu due to touch outside');
-        setIsMobileMenuOpen(false);
-      }
-    };
-
-    // Prevent body scrolling when mobile menu is open
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.classList.add('mobile-menu-open');
-    } else {
-      document.body.style.overflow = 'unset';
-      document.body.classList.remove('mobile-menu-open');
-    }
 
     window.addEventListener('resize', handleResize);
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscapeKey);
-    document.addEventListener('touchstart', handleTouchStart, { passive: false });
 
     return () => {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
-      document.removeEventListener('touchstart', handleTouchStart);
-      document.body.style.overflow = 'unset';
-      document.body.classList.remove('mobile-menu-open');
     };
   }, [isMobileMenuOpen]);
 
   return (
-    <nav className="fixed top-0 w-full z-[100] glass-effect">
+    <nav className="fixed top-0 w-full z-50 bg-gray-900/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
@@ -122,18 +95,19 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
                 justifyContent: 'center'
               }}
             >
-              <FontAwesomeIcon
-                icon={isMobileMenuOpen ? faTimes : faBars}
+              <span
                 className="text-xl transition-transform duration-300"
                 style={{ pointerEvents: 'none' }}
-              />
+              >
+                {isMobileMenuOpen ? '✕' : '☰'}
+              </span>
             </button>
           </div>
         </div>
         {/* Mobile menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-gray-900/98 backdrop-blur-md border-t border-gray-700 shadow-lg">
-            <div className="px-4 pt-4 pb-6 space-y-2 max-h-[80vh] overflow-y-auto">
+          <div className="md:hidden absolute top-full left-0 w-full bg-gray-900 border-t border-gray-700 shadow-lg" style={{ zIndex: 999 }}>
+            <div className="px-4 pt-4 pb-6 space-y-2">
               {navItems.map((item) => (
                 <button
                   key={item.id}
@@ -141,12 +115,12 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
                     onNavigate(item.id);
                     closeMobileMenu();
                   }}
-                  className={`mobile-nav-item block w-full text-left px-4 py-3 rounded-lg text-lg font-medium transition-all duration-300 ${
+                  className={`block w-full text-left px-4 py-3 text-lg font-medium transition-all duration-300 ${
                     currentSection === item.id
-                      ? 'text-white bg-blue-600/70 shadow-md'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700/60 active:bg-gray-600/60'
+                      ? 'text-white bg-blue-600'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
                   }`}
-                  style={{ touchAction: 'manipulation' }}
+                  style={{ touchAction: 'manipulation', minHeight: '48px' }}
                 >
                   {item.label}
                 </button>
