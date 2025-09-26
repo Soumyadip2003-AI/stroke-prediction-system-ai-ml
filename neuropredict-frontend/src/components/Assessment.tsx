@@ -74,11 +74,11 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4 hover:text-blue-400 transition-colors duration-300 cursor-pointer">
+      <div className="text-center mb-12 sm:mb-16">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 hover:text-blue-400 transition-colors duration-300 cursor-pointer">
           AI-Powered Stroke Risk Assessment
         </h2>
-        <p className="text-xl text-gray-300">
+        <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 leading-relaxed">
           Enter your health information for an advanced stroke risk analysis using{' '}
           <span className="text-blue-400 font-semibold hover:text-purple-400 transition-colors duration-300 cursor-pointer">
             9 Advanced AI Models
@@ -90,17 +90,17 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         </p>
       </div>
 
-      <div className="glass-effect rounded-2xl p-8">
+      <div className="glass-effect rounded-2xl p-6 sm:p-8">
         {/* Step 1: Personal Information */}
         {currentStep === 1 && (
           <div>
-            <h3 className="text-2xl font-semibold mb-6 flex items-center">
+            <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 sm:mb-8 flex items-center">
               <i className="fas fa-user mr-3 text-blue-400"></i>
               Personal Information
             </h3>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-base sm:text-lg font-medium mb-3">
                   <i className="fas fa-calendar mr-2 text-blue-400"></i>
                   Age
                 </label>
@@ -108,20 +108,20 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
                   type="number"
                   value={formData.age}
                   onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
                   min="1"
                   max="100"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-base sm:text-lg font-medium mb-3">
                   <i className="fas fa-venus-mars mr-2 text-blue-400"></i>
                   Gender
                 </label>
                 <select
                   value={formData.gender}
                   onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -129,14 +129,14 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-base sm:text-lg font-medium mb-3">
                   <i className="fas fa-heart mr-2 text-blue-400"></i>
                   Marital Status
                 </label>
                 <select
                   value={formData.ever_married}
                   onChange={(e) => handleInputChange('ever_married', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
                 >
                   <option value="No">Never Married</option>
                   <option value="Yes">Married</option>
@@ -307,21 +307,21 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between items-center mt-8">
+        <div className="flex flex-col sm:flex-row justify-between items-center mt-10 sm:mt-12 space-y-4 sm:space-y-0">
           <button
             onClick={prevStep}
             disabled={currentStep === 1 || isSubmitting}
-            className="flex items-center px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center px-6 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] min-h-[48px] text-lg"
           >
             <i className="fas fa-chevron-left mr-2"></i>
             Previous
           </button>
-          <div className="flex space-x-2">
+          <div className="flex space-x-3">
             {[1, 2, 3].map((step) => (
               <div
                 key={step}
-                className={`w-3 h-3 rounded-full ${
-                  step <= currentStep ? 'bg-blue-500' : 'bg-gray-600'
+                className={`w-4 h-4 rounded-full transition-all duration-300 ${
+                  step <= currentStep ? 'bg-blue-500 scale-110' : 'bg-gray-600'
                 }`}
               />
             ))}
@@ -330,7 +330,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
             <button
               onClick={nextStep}
               disabled={isSubmitting}
-              className="flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] min-h-[48px] text-lg"
             >
               Next
               <i className="fas fa-chevron-right ml-2"></i>
@@ -339,7 +339,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
             <button
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-12 py-4 rounded-full font-semibold transition-all duration-300 transform hover:scale-110 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed z-10 relative overflow-hidden group ${
+              className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed z-10 relative overflow-hidden group min-w-[200px] min-h-[56px] flex items-center justify-center ${
                 isSubmitting ? 'animate-pulse' : 'hover:animate-bounce'
               }`}
             >
@@ -347,8 +347,8 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
 
               <div className="relative flex items-center justify-center">
-                <i className={`fas fa-brain mr-2 transition-transform duration-300 ${isSubmitting ? 'animate-spin' : 'group-hover:rotate-12'}`}></i>
-                <span className="relative">
+                <i className={`fas fa-brain mr-3 transition-transform duration-300 ${isSubmitting ? 'animate-spin' : 'group-hover:rotate-12'}`}></i>
+                <span className="relative text-base sm:text-lg">
                   {isSubmitting ? '🧠 Analyzing with AI...' : '🚀 Get AI Stroke Risk Assessment'}
                 </span>
                 {!isSubmitting && (

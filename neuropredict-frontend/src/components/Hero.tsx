@@ -13,14 +13,23 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
 
   // Enhanced mouse tracking for neural network interactions
   useEffect(() => {
+    // Throttle mouse move events for better performance
+    let animationFrameId: number;
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (networkRef.current) {
-        const rect = networkRef.current.getBoundingClientRect();
-        setMousePosition({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        });
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
+
+      animationFrameId = requestAnimationFrame(() => {
+        if (networkRef.current) {
+          const rect = networkRef.current.getBoundingClientRect();
+          setMousePosition({
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+          });
+        }
+      });
     };
 
     const handleMouseEnter = () => {
@@ -78,6 +87,9 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
     document.addEventListener('keypress', handleKeyPress);
 
     return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
       if (network) {
         network.removeEventListener('mousemove', handleMouseMove);
         network.removeEventListener('mouseenter', handleMouseEnter);
@@ -89,58 +101,58 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-20">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <div className="space-y-4 sm:space-y-6 lg:space-y-8 text-center lg:text-left">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
+        <div className="space-y-6 sm:space-y-8 lg:space-y-8 text-center lg:text-left">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight">
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Advanced AI
             </span>
             <br />
             <span className="text-white">Stroke Risk Prediction</span>
           </h1>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+          <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
             Experience advanced healthcare AI using 9 powerful machine learning models with advanced feature engineering.
             Get personalized stroke risk predictions with 95%+ accuracy and intelligent recommendations.
           </p>
 
           {/* AI Indicators */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-4 mb-4 lg:mb-6">
-            <div className="flex items-center bg-blue-900 bg-opacity-50 px-2 sm:px-3 lg:px-4 py-1 sm:py-2 rounded-full interactive-card">
-              <FontAwesomeIcon icon={faBrain} className="text-blue-400 mr-1 sm:mr-2 pulse-on-hover text-xs sm:text-sm" />
-              <span className="text-blue-400 text-xs sm:text-sm font-medium interactive-text">Advanced ML Models</span>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 mb-6 lg:mb-8">
+            <div className="flex items-center bg-blue-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
+              <FontAwesomeIcon icon={faBrain} className="text-blue-400 mr-2 sm:mr-3 pulse-on-hover text-sm sm:text-base" />
+              <span className="text-blue-400 text-sm sm:text-base font-medium interactive-text">Advanced ML Models</span>
             </div>
-            <div className="flex items-center bg-green-900 bg-opacity-50 px-2 sm:px-3 lg:px-4 py-1 sm:py-2 rounded-full interactive-card">
-              <span className="text-green-400 text-xs sm:text-sm font-medium interactive-text">High Accuracy</span>
+            <div className="flex items-center bg-green-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
+              <span className="text-green-400 text-sm sm:text-base font-medium interactive-text">High Accuracy</span>
             </div>
-            <div className="flex items-center bg-purple-900 bg-opacity-50 px-2 sm:px-3 lg:px-4 py-1 sm:py-2 rounded-full interactive-card">
-              <FontAwesomeIcon icon={faMagicWandSparkles} className="text-purple-400 mr-1 sm:mr-2 pulse-on-hover text-xs sm:text-sm" />
-              <span className="text-purple-400 text-xs sm:text-sm font-medium interactive-text">Intelligent Analysis</span>
+            <div className="flex items-center bg-purple-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
+              <FontAwesomeIcon icon={faMagicWandSparkles} className="text-purple-400 mr-2 sm:mr-3 pulse-on-hover text-sm sm:text-base" />
+              <span className="text-purple-400 text-sm sm:text-base font-medium interactive-text">Intelligent Analysis</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-blue-400 interactive-text">95%+</div>
-              <div className="text-xs sm:text-sm text-gray-400">Accuracy</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
+              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-blue-400 interactive-text">95%+</div>
+              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">Accuracy</div>
             </div>
-            <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400 interactive-text">0.982</div>
-              <div className="text-xs sm:text-sm text-gray-400">ROC-AUC</div>
+            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
+              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-purple-400 interactive-text">0.982</div>
+              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">ROC-AUC</div>
             </div>
-            <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-green-400 interactive-text">9</div>
-              <div className="text-xs sm:text-sm text-gray-400">AI Models</div>
+            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
+              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-green-400 interactive-text">9</div>
+              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">AI Models</div>
             </div>
-            <div className="text-center interactive-card bounce-on-hover p-2 sm:p-3">
-              <div className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400 interactive-text">40+</div>
-              <div className="text-xs sm:text-sm text-gray-400">Features</div>
+            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
+              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-pink-400 interactive-text">40+</div>
+              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">Features</div>
             </div>
           </div>
           <button
             onClick={onStartAssessment}
-            className="magic-button text-white px-4 sm:px-6 lg:px-8 py-3 sm:py-4 rounded-full font-semibold transition-all duration-300 transform click-ripple text-sm sm:text-base w-full sm:w-auto min-w-[200px]"
+            className="magic-button text-white px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 rounded-full font-semibold transition-all duration-300 transform click-ripple text-base sm:text-lg lg:text-xl w-full sm:w-auto min-w-[220px] min-h-[56px] flex items-center justify-center"
           >
-            <FontAwesomeIcon icon={faRobot} className="mr-2 animate-spin hover:animate-none" />
+            <FontAwesomeIcon icon={faRobot} className="mr-3 animate-spin hover:animate-none" />
             <span className="relative z-10">🚀 Start Interactive AI Assessment</span>
           </button>
         </div>
@@ -148,7 +160,7 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
           <div
             ref={networkRef}
             id="neural-network-container"
-            className="neural-network-container relative cursor-pointer enhanced-particles w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96"
+            className="neural-network-container relative cursor-pointer enhanced-particles w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] xl:w-[32rem] xl:h-[32rem]"
             style={{ touchAction: 'none' }} // Prevent default touch behaviors
           >
             {/* Neural Network Connections */}
