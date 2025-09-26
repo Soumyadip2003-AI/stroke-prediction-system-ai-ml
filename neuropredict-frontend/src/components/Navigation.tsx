@@ -79,6 +79,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
     };
   }, [isMobileMenuOpen]);
 
+  // Debug: Log navigation state
+  console.log('Navigation rendered, isMobileMenuOpen:', isMobileMenuOpen);
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-gray-900/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -106,20 +109,24 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
           </div>
           <div className="md:hidden">
             <button
-              onClick={toggleMobileMenu}
-              className="mobile-menu-button p-2 text-gray-300 hover:text-white focus:outline-none focus:text-white transition-all duration-300 rounded-md hover:bg-gray-700/30 active:bg-gray-600/50"
+              onClick={() => {
+                console.log('Mobile menu button clicked! Current state:', isMobileMenuOpen);
+                toggleMobileMenu();
+              }}
+              className="mobile-menu-button p-3 text-gray-200 hover:text-white focus:outline-none focus:text-white transition-all duration-300 rounded-lg hover:bg-gray-700/50 active:bg-gray-600 border border-gray-600"
               aria-label="Toggle mobile menu"
               style={{
                 touchAction: 'manipulation',
-                minHeight: '44px',
-                minWidth: '44px',
+                minHeight: '48px',
+                minWidth: '48px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                backgroundColor: 'rgba(55, 65, 81, 0.5)'
               }}
             >
               <span
-                className="text-xl transition-transform duration-300"
+                className="text-2xl font-bold transition-transform duration-300"
                 style={{ pointerEvents: 'none' }}
               >
                 {isMobileMenuOpen ? '✕' : '☰'}
@@ -128,29 +135,38 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
           </div>
         </div>
         {/* Mobile menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 w-full bg-gray-900 border-t border-gray-700 shadow-lg" style={{ zIndex: 999 }}>
-            <div className="px-4 pt-4 pb-6 space-y-2">
-              {navItems.map((item) => (
+        {isMobileMenuOpen && (() => {
+          console.log('Mobile menu rendered!');
+          console.log('Rendering mobile menu items:', navItems);
+          return (
+            <div className="md:hidden absolute top-full left-0 w-full bg-gray-900/95 backdrop-blur-md border-t border-gray-600 shadow-xl" style={{ zIndex: 999 }}>
+              <div className="px-4 pt-6 pb-8 space-y-3">
+                {navItems.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => {
+                    console.log('Mobile menu item clicked:', item.id);
                     onNavigate(item.id);
                     closeMobileMenu();
                   }}
-                  className={`block w-full text-left px-4 py-3 text-lg font-medium transition-all duration-300 ${
+                  className={`block w-full text-left px-6 py-4 text-xl font-medium transition-all duration-300 rounded-lg ${
                     currentSection === item.id
-                      ? 'text-white bg-blue-600'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                      ? 'text-white bg-blue-600 shadow-lg'
+                      : 'text-gray-200 hover:text-white hover:bg-gray-700/80 active:bg-gray-600'
                   }`}
-                  style={{ touchAction: 'manipulation', minHeight: '48px' }}
+                  style={{
+                    touchAction: 'manipulation',
+                    minHeight: '56px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                  }}
                 >
                   {item.label}
                 </button>
               ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </nav>
   );
