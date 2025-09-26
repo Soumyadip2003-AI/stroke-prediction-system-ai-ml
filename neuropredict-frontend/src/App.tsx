@@ -339,7 +339,7 @@ function App() {
       <Navigation currentSection={currentSection} onNavigate={scrollToSection} />
       
       {/* Hero Section */}
-      <section id="home" className="min-h-screen flex items-center justify-center relative">
+      <section id="home" className="min-h-screen flex items-center justify-center relative pt-20 md:pt-0">
         <Hero onStartAssessment={() => scrollToSection('assessment')} />
       </section>
       

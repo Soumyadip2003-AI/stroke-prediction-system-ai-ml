@@ -27,7 +27,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
   return (
     <nav className="fixed top-0 w-full z-50 bg-gray-900/90 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           <div className="flex items-center space-x-2">
             <i className="fas fa-brain text-xl sm:text-2xl text-blue-400"></i>
             <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -81,7 +81,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) =
             <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm md:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
-              style={{ top: '64px' }}
+              style={{ top: '80px' }}
             ></div>
 
             {/* Mobile Menu */}

@@ -101,9 +101,9 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <div className="space-y-6 sm:space-y-8 lg:space-y-8 text-center lg:text-left">
+        <div className="space-y-6 sm:space-y-8 lg:space-y-10 text-center lg:text-left">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight">
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Advanced AI
@@ -160,7 +160,7 @@ const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
           <div
             ref={networkRef}
             id="neural-network-container"
-            className="neural-network-container relative cursor-pointer enhanced-particles w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] xl:w-[32rem] xl:h-[32rem]"
+            className="neural-network-container relative cursor-pointer enhanced-particles w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] xl:w-[32rem] xl:h-[32rem] interactive-card"
             style={{ touchAction: 'none' }} // Prevent default touch behaviors
           >
             {/* Neural Network Connections */}
