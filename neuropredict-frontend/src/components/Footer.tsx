@@ -41,7 +41,7 @@ const Footer: React.FC = () => {
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-          <p className="text-gray-400">&copy; 2024 NeuroPredict. All rights reserved.</p>
+          <p className="text-gray-400">&copy; 2025 NeuroPredict. All rights reserved.</p>
           <p className="text-sm text-gray-500 mt-2">
             This tool is for educational purposes only. Consult healthcare professionals for medical advice.
           </p>
