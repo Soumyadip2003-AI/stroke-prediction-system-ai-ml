@@ -12,6 +12,36 @@
 
 **NeuroPredict** is a revolutionary **AI-powered stroke risk assessment system** featuring an ultra-interactive React frontend with stunning animations and comprehensive mobile responsiveness. Built with cutting-edge machine learning models and advanced web technologies, it provides accurate stroke risk predictions with an engaging, futuristic user experience.
 
+## 🧭 Repository management
+
+This repo mixes a Flask backend, a React frontend, trained model artifacts, and several experimental training scripts. To make it easier to work with, the project now has a simple developer workflow:
+
+- Use `npm run setup` for initial environment setup
+- Use `npm run dev` to launch both backend and frontend together
+- Use `npm run check` before shipping changes
+- Keep model/training files separate from the app runtime files
+
+### Common commands
+
+```bash
+# one-time environment setup
+npm run setup
+
+# start both services together
+npm run dev
+
+# backend only
+npm run dev:backend
+
+# frontend only
+npm run dev:frontend
+
+# validate repo health
+npm run check
+```
+
+> The repo still contains research files and model artifacts alongside the app runtime, so the goal is to keep the main application flow predictable while preserving the experimentation scripts in place.
+
 ### ✨ What Makes NeuroPredict Special?
 
 - 🎨 **Ultra-Interactive Animations**: 150+ particles responding to touch/mouse movements
