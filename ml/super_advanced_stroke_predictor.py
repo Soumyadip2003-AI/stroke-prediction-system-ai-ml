@@ -616,7 +616,7 @@ class SuperAdvancedStrokePredictor:
             self.best_model_name = best_model_name
             self.performance_metrics = results
 
-            logger.info(f"Best model: {best_model_name} with F1={results[best_model_name]['f1']".4f"}")
+            logger.info(f"Best model: {best_model_name} with F1={results[best_model_name]['f1']:.4f}")
 
         return results
 
@@ -689,7 +689,7 @@ class SuperAdvancedStrokePredictor:
 
         logger.info("Complete advanced training pipeline finished!")
         logger.info(f"Best model: {self.best_model_name}")
-        logger.info(f"Best F1 Score: {self.performance_metrics[self.best_model_name]['f1']".4f"}")
+        logger.info(f"Best F1 Score: {self.performance_metrics[self.best_model_name]['f1']:.4f}")
 
         return self.best_model, self.performance_metrics
 
