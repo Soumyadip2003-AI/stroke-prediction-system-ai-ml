@@ -29,6 +29,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
 
+@app.route('/', methods=['GET'])
+def home():
+    """Simple root route for deployment health checks."""
+    return jsonify({'status': 'Backend is running'})
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health endpoint used by deployment checks."""
+    return jsonify({'status': 'healthy'})
+
 # Global variables for models
 models = {}
 scalers = {}
