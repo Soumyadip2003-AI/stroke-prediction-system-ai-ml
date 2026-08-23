@@ -29,6 +29,16 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
 
+@app.route('/', methods=['GET'])
+def home():
+    """Simple root route for deployment health checks."""
+    return jsonify({'status': 'Backend is running'})
+
+@app.route('/health', methods=['GET'])
+def health():
+    """Health endpoint used by deployment checks."""
+    return jsonify({'status': 'healthy'})
+
 # Global variables for models
 models = {}
 scalers = {}
@@ -395,9 +405,9 @@ def preprocess_data(data):
 
 # Removed build_enhanced_features function - not needed for current implementation
 
-@app.route('/')
+@app.route('/index.html')
 def serve_index():
-    """Serve the main HTML file."""
+    """Serve the main HTML file when the app is run directly."""
     return send_from_directory('.', 'index.html')
 
 @app.route('/api/health', methods=['GET'])
