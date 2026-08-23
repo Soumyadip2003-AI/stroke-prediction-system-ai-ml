@@ -7,7 +7,7 @@ interface AssessmentProps {
 const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const API_BASE = (process.env.REACT_APP_API_BASE as string) || 'http://localhost:5002';
+  const API_BASE = (process.env.REACT_APP_API_BASE as string) || 'https://stroke-prediction-system-ai-ml.onrender.com';
 
   const [formData, setFormData] = useState({
     age: 55,
