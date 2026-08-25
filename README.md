@@ -1,6 +1,6 @@
 # 🧠 NeuroPredict - Interactive AI Stroke Risk Assessment System
 
-🅻🅸🅽🅺:- https://stroke-prediction-system-ai-ml-xshe.vercel.app/
+🅻🅸🅽🅺:- [https://stroke-prediction-system-ai-ml-xshe.vercel.app/](https://stroke-prediction-system-ai-ml-xshe.vercel.app)
 
 ![React Frontend](https://img.shields.io/badge/React-Frontend-blue)
 ![Flask Backend](https://img.shields.io/badge/Flask-Backend-green)
