@@ -1,0 +1,41 @@
+{
+  "model": "hist_gradient_boosting",
+  "threshold": 0.5307804694665499,
+  "features": [
+    "gender_Male",
+    "gender_Female",
+    "gender_Other",
+    "age",
+    "hypertension",
+    "heart_disease",
+    "ever_married_Yes",
+    "work_type_Private",
+    "work_type_Self-employed",
+    "work_type_children",
+    "work_type_Govt_job",
+    "work_type_Never_worked",
+    "Residence_type_Urban",
+    "Residence_type_Rural",
+    "avg_glucose_level",
+    "bmi",
+    "smoking_status_never smoked",
+    "smoking_status_formerly smoked",
+    "smoking_status_smokes",
+    "age_squared",
+    "glucose_log"
+  ],
+  "n_features": 21,
+  "trained_on": "healthcare-dataset-stroke-data.csv",
+  "n_rows": 5110,
+  "positive_rate": 0.0487279843444227,
+  "metrics_holdout": {
+    "roc_auc": 0.8481172839506173,
+    "average_precision": 0.2461171724376061,
+    "recall": 0.82,
+    "precision": 0.1583011583011583,
+    "accuracy": 0.7778864970645792,
+    "specificity": 0.7757201646090535
+  },
+  "majority_class_accuracy": 0.9512720156555773,
+  "sklearn": "1.5.2"
+}
