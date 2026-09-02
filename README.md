@@ -141,33 +141,28 @@ python backend.py
 ```
 stroke-prediction-system-ai-ml/
 ├── 🧠 Model
-│   ├── stroke_prediction_model.pkl     # The served model (histogram gradient boosting)
+│   ├── stroke_prediction_model.pkl     # The served model (calibrated gradient boosting)
 │   ├── model_metadata.json             # Fitted threshold + measured held-out metrics
-│   ├── feature_columns.pkl             # Legacy column list (fallback only)
-│   ├── scaler.pkl                      # Legacy scaler, unused by the serving path
 │   └── healthcare-dataset-stroke-data.csv   # Public stroke dataset, 5,110 rows
 │
 ├── 🖥️  Backend (Flask API)
 │   ├── backend.py                      # Gunicorn entrypoint (backend:app)
-│   ├── app/server.py                   # The application: routes, preprocessing, prediction
+│   ├── app/server.py                   # Routes, preprocessing, validation, prediction
 │   ├── requirements.txt                # Serving dependencies only
-│   └── requirements-ml.txt             # Optional training/experiment extras
+│   └── requirements-ml.txt             # Optional training extras
 │
 ├── 🔬 ml/
 │   ├── train_stroke_model.py           # Trains and saves the served model
 │   ├── verify_model.py                 # Does the model actually predict? (out-of-fold gate)
-│   ├── test_model_sanity.py            # Fast regression guard, wired into `npm run check`
-│   └── *.py                            # Legacy experiment and training scripts
+│   └── test_model_sanity.py            # Fast regression guard, wired into `npm run check`
 │
-├── ⚛️  Frontend (React + TypeScript)
-│   └── neuropredict-frontend/
-│       ├── src/components/             # Navigation, Hero, Assessment, Results,
-│       │                               #   ResultsSkeleton, Insights, About, Footer
-│       ├── src/App.tsx                 # Section layout + scroll reveal
-│       ├── src/index.css               # Design tokens, reduced-motion, focus states
-│       └── public/index.html           # Metadata, Open Graph, JSON-LD
-│
-└── 📚 docs/ + README.md
+└── ⚛️  Frontend (React + TypeScript)
+    └── neuropredict-frontend/
+        ├── src/components/             # Navigation, Hero, Assessment, Results,
+        │                               #   ResultsSkeleton, Insights, About, Footer
+        ├── src/App.tsx                 # Section layout + scroll reveal
+        ├── src/index.css               # Design tokens, reduced-motion, focus states
+        └── public/index.html           # Metadata, Open Graph, JSON-LD
 ```
 
 ## 🔬 Modelling Notes

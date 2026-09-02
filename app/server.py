@@ -6,7 +6,7 @@ This Flask backend provides API endpoints for the React frontend to interact wit
 the advanced machine learning models for stroke risk prediction.
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 try:
     import pandas as pd
@@ -93,16 +93,12 @@ def load_models():
         logger.warning("Serving a mock model. Predictions are meaningless until this is fixed.")
 
     # Authoritative feature order, written by the trainer from this same
-    # preprocess_data. feature_columns.pkl lists the columns in a different
-    # order and is only a fallback.
-    feature_columns = MODEL_METADATA.get('features')
+    # preprocess_data.
+    # model_metadata.json is authoritative: the trainer writes it from the same
+    # preprocess_data this module serves with.
+    feature_columns = MODEL_METADATA.get('features') or []
     if not feature_columns:
-        try:
-            feature_columns = joblib.load('feature_columns.pkl')
-            logger.warning("Using feature_columns.pkl; column order may not match the model")
-        except Exception:
-            logger.error("No feature order available")
-            feature_columns = []
+        logger.error("No feature order in model_metadata.json")
 
     return len(models) > 0
 
@@ -290,11 +286,6 @@ def preprocess_data(data):
         return features_df
 
 # Removed build_enhanced_features function - not needed for current implementation
-
-@app.route('/index.html')
-def serve_index():
-    """Serve the main HTML file when the app is run directly."""
-    return send_from_directory('.', 'index.html')
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
