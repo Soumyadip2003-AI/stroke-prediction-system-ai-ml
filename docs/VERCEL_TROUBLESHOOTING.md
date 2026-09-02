@@ -1,5 +1,15 @@
 # 🔧 Vercel Deployment Troubleshooting Guide
 
+> **REMOVED, DO NOT RECREATE.** The `api/predict.js` serverless function described
+> below has been deleted. It was not a model: it was a hand-written if/else scorer
+> that returned a fabricated risk percentage (it answered **100%** for a high-risk
+> test profile while the real model returned 87.5%). It was publicly reachable, so
+> the site had two live prediction endpoints giving different medical answers.
+>
+> The frontend calls the Flask API at `REACT_APP_API_BASE` instead, which serves the
+> real trained model. If you need a serverless path, proxy to that API. Do not
+> reintroduce a hardcoded scorer for medical output.
+
 This guide helps you resolve common Vercel deployment errors for your NeuroPredict system.
 
 ## ✅ **Current Status: FIXED!**

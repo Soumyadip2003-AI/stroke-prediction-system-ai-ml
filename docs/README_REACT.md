@@ -36,7 +36,7 @@ neuropredict-frontend/
 │   │   │   ├── Insights.tsx       # Model insights
 │   │   │   ├── About.tsx         # About section
 │   │   │   ├── Footer.tsx        # Footer component
-│   │   │   └── LoadingOverlay.tsx # Loading animation
+│   │   │   └── ResultsSkeleton.tsx # Loading skeleton shaped like the results
 │   │   ├── App.tsx               # Main App component
 │   │   ├── App.css               # App styles
 │   │   ├── index.tsx             # React entry point
@@ -143,7 +143,7 @@ npm start
 - Social media links
 - Legal disclaimers
 
-### 8. **LoadingOverlay.tsx**
+### 8. **ResultsSkeleton.tsx**
 - Animated loading screen
 - Progress indicators
 - Brain icon animation
