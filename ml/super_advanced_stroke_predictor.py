@@ -298,7 +298,14 @@ class SuperAdvancedStrokePredictor:
         for col in categorical_cols:
             if col in df.columns:
                 dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
-                df = pd.concat([df, dummies], axis=1)
+                df = pd.concat([df.drop(columns=[col]), dummies], axis=1)
+
+        # The originals have to be dropped, not just supplemented. Concatenating
+        # the dummies while leaving the source columns in place meant raw strings
+        # ("Female", "Private") reached SMOTE and every estimator downstream,
+        # which failed with: could not convert string to float: 'Female'.
+        if 'smoking_status' in df.columns:
+            df = df.drop(columns=['smoking_status'])
 
         return df
 
@@ -330,7 +337,12 @@ class SuperAdvancedStrokePredictor:
 
         # Gaussian Mixture Models
         gmm = GaussianMixture(n_components=4, random_state=self.random_state)
-        X_train_gmm = gmm.fit_predict(X_train_scaled)
+        # fit_predict returns 1-D cluster labels, but the features below index
+        # this as 2-D, and the test side already uses predict_proba. Using
+        # predict_proba for both makes train and test the same shape and stops
+        # the IndexError.
+        gmm.fit(X_train_scaled)
+        X_train_gmm = gmm.predict_proba(X_train_scaled)
         X_test_gmm = gmm.predict_proba(X_test_scaled)
 
         # Store unsupervised models
@@ -357,13 +369,22 @@ class SuperAdvancedStrokePredictor:
         X_train_enhanced = X_train.copy()
         X_test_enhanced = X_test.copy()
 
+        test_sources = {'pca': X_test_pca, 'ica': X_test_ica, 'gmm': X_test_gmm}
+
         for feature, values in unsupervised_features.items():
-            if feature.startswith('pca_') or feature.startswith('ica_') or feature.startswith('gmm_'):
-                X_train_enhanced[feature] = values
-                X_test_enhanced[feature] = X_test_pca[:, int(feature.split('_')[1])] if feature.startswith('pca_') and X_test_pca.shape[1] > int(feature.split('_')[1]) else X_test_ica[:, int(feature.split('_')[1])] if feature.startswith('ica_') and X_test_ica.shape[1] > int(feature.split('_')[1]) else X_test_gmm[:, int(feature.split('_')[1])] if feature.startswith('gmm_') and X_test_gmm.shape[1] > int(feature.split('_')[1]) else 0
-            else:
-                X_train_enhanced[feature] = values
-                X_test_enhanced[feature] = kmeans.predict(X_test_scaled) if feature == 'kmeans_cluster' else gmm.predict_proba(X_test_scaled)[:, 0] if X_test_gmm.shape[1] > 0 else 0
+            X_train_enhanced[feature] = values
+
+            if feature == 'kmeans_cluster':
+                X_test_enhanced[feature] = kmeans.predict(X_test_scaled)
+                continue
+
+            # The column index is the LAST underscore-separated segment.
+            # pca_0 and ica_1 have two parts, but gmm_cluster_0 has three, so
+            # the old split('_')[1] read "cluster" and int() raised
+            # ValueError: invalid literal for int() with base 10: 'cluster'.
+            index = int(feature.split('_')[-1])
+            source = test_sources[feature.split('_')[0]]
+            X_test_enhanced[feature] = source[:, index] if source.shape[1] > index else 0
 
         logger.info(f"Enhanced training set shape: {X_train_enhanced.shape}")
         logger.info(f"Enhanced test set shape: {X_test_enhanced.shape}")

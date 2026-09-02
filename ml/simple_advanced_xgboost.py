@@ -144,7 +144,14 @@ class SimpleAdvancedXGBoost:
         for col in categorical_cols:
             if col in df.columns:
                 dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
-                df = pd.concat([df, dummies], axis=1)
+                df = pd.concat([df.drop(columns=[col]), dummies], axis=1)
+
+        # The originals have to be dropped, not just supplemented. Concatenating
+        # the dummies while leaving the source columns in place meant raw strings
+        # ("Female", "Private") reached SMOTE and every estimator downstream,
+        # which failed with: could not convert string to float: 'Female'.
+        if 'smoking_status' in df.columns:
+            df = df.drop(columns=['smoking_status'])
 
         return df
 

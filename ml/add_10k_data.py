@@ -272,9 +272,13 @@ def add_10k_data():
     print(f"Final enhanced dataset shape: {enhanced_df.shape}")
     print(f"Final stroke distribution: {enhanced_df['stroke'].value_counts()}")
     
-    # Save back to original file
-    enhanced_df.to_csv('healthcare-dataset-stroke-data.csv', index=False)
-    print("✅ Dataset enhanced with 10,000 additional data points!")
+    # Write to a separate file, never over the source dataset. This used to
+    # overwrite healthcare-dataset-stroke-data.csv in place, so running the
+    # script twice silently grew the tracked dataset from 5,110 to 25,110 rows
+    # and quietly changed what every model in the repo trains on.
+    out = 'healthcare-dataset-stroke-data.augmented.csv'
+    enhanced_df.to_csv(out, index=False)
+    print(f"Wrote {len(enhanced_df)} rows to {out} (source dataset left untouched)")
     
     return enhanced_df
 

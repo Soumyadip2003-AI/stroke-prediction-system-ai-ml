@@ -134,6 +134,18 @@ class WorkingAdvancedStrokePredictor:
         df['cardiovascular_risk'] = (df['hypertension'] + df['heart_disease'] +
                                    df['is_diabetic'] + df['is_obese'])
 
+        # This step was missing entirely. Without it the raw string columns went
+        # straight into train_test_split and then into the estimators, failing
+        # with: could not convert string to float: 'Female'.
+        for col in ['gender', 'ever_married', 'work_type', 'Residence_type', 'smoking_status']:
+            if col in df.columns:
+                dummies = pd.get_dummies(df[col], prefix=col, drop_first=True)
+                df = pd.concat([df.drop(columns=[col]), dummies], axis=1)
+
+        # id is a row identifier, not a predictor.
+        if 'id' in df.columns:
+            df = df.drop(columns=['id'])
+
         return df
 
     def apply_unsupervised_learning(self, X_train, X_test):
