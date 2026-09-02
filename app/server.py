@@ -506,8 +506,10 @@ def predict_stroke_risk():
             'decision_threshold': DECISION_THRESHOLD,
             # Measured on a held-out split by ml/train_stroke_model.py, not typed in.
             'model_performance': MODEL_METADATA.get('metrics_holdout', {}),
-            'all_predictions': predictions,
-            'all_probabilities': probabilities,
+            # 'all_predictions' / 'all_probabilities' are gone. They existed to
+            # report per-model output back when the response claimed nine
+            # models; with one model they were {'main': x}, duplicating
+            # 'probability' exactly.
             'health_analysis': health_analysis,
             'recommendations': recommendations,
             'timestamp': datetime.now().isoformat()
