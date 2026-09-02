@@ -142,7 +142,7 @@ python backend.py
 ```
 stroke-prediction-system-ai-ml/
 ├── 🧠 Model
-│   ├── stroke_prediction_model.pkl     # The served model (calibrated gradient boosting)
+│   ├── stroke_prediction_model.pkl     # The served model (calibrated logistic regression)
 │   ├── model_metadata.json             # Fitted threshold + measured held-out metrics
 │   └── healthcare-dataset-stroke-data.csv   # Public stroke dataset, 5,110 rows
 │
