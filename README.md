@@ -207,6 +207,26 @@ Present in the legacy `ml/` scripts, deliberately absent from what ships:
   need pruning
 - **Isotonic calibration, stacking, GPU training** - no measurable benefit at this size
 
+### 🎯 Calibrated probabilities
+The number the API returns is a real estimated probability, not a ranking score.
+Of people scored around 15%, about 15% went on to have a stroke.
+
+Balanced class weights deliberately distort probabilities so the model takes a
+4.87% positive class seriously. That is right for ranking and wrong for anything
+shown to a person: uncalibrated, the model told people scoring 0.80+ that their
+risk was 80% when the real rate in that group was 20.6%. Sigmoid calibration
+fixes it at no cost to ranking:
+
+| | Uncalibrated | Calibrated |
+|---|---|---|
+| Mean gap between shown % and reality | 36.93 pts | **0.83 pts** |
+| Brier score | 0.1503 | **0.0416** |
+| ROC-AUC | 0.8361 | **0.8486** |
+
+Because the outputs are honest, they top out near 26% rather than 100%. Risk
+bands are therefore multiples of the population base rate (4.87%),
+which is also what a reader wants: not "24%" alone, but "five times average".
+
 ### 📉 The accuracy ceiling
 Every architecture tested lands between 0.83 and 0.85 ROC-AUC. That flatness is an
 information ceiling in the data, not a modelling failure. Age dominates. Moving past it
@@ -245,19 +265,19 @@ training or threshold fitting. Regenerate with `npm run train:model`.
 
 | Metric | Value | Why it is here |
 |--------|-------|----------------|
-| **ROC-AUC** | **0.8481** | The headline number. 0.50 is a coin flip. |
+| **ROC-AUC** | **0.8486** | The headline number. 0.50 is a coin flip. |
 | **Recall** | **0.82** | Share of real strokes caught. This is what the model is tuned for. |
-| **Precision** | **0.1583** | Roughly 1 flagged case in 7 is a real stroke. |
-| **Average precision** | **0.2461** | Better than accuracy on a 4.9% positive class. |
-| **Specificity** | **0.7757** | Share of non-strokes correctly cleared. |
-| **Accuracy** | **0.7779** | Reported last, deliberately. See below. |
+| **Precision** | **0.1444** | Roughly 1 flagged case in 7 is a real stroke. |
+| **Average precision** | **0.2744** | Better than accuracy on a 4.9% positive class. |
+| **Specificity** | **0.7500** | Share of non-strokes correctly cleared. |
+| **Accuracy** | **0.7534** | Reported last, deliberately. See below. |
 
 **Accuracy is lower than the baseline, and that is the point.** Only 4.87% of the
 dataset had a stroke, so a model that always answers "no stroke" scores
 95.13% accuracy while catching zero of them. An earlier version of
 this project did exactly that: 95.13% accuracy, ROC-AUC 0.5605, recall 0.0000.
 Models here are selected on ROC-AUC with balanced class weights, and the decision
-threshold (0.5308) is fitted out-of-fold rather than left at 0.5.
+threshold (0.0666) is fitted out-of-fold rather than left at 0.5.
 
 **Architecture:** one histogram gradient boosting model over 21 features. A grid of 41
 configurations showed a tuned single model reaches ROC-AUC 0.8425 against 0.8429 for a

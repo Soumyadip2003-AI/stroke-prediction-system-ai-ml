@@ -44,7 +44,8 @@ const Insights: React.FC = () => (
           </dl>
           <p className="mt-5 text-xs text-fog-400 max-w-[54ch]">
             Held-out 20% split of the public stroke dataset (5,110 records), never seen during
-            training or threshold fitting. Research figures, not a clinical validation.
+            training or threshold fitting. Probabilities are calibrated, so the percentage shown is a
+            real estimated risk, not a score. Research figures, not a clinical validation.
           </p>
         </div>
       </div>
@@ -61,7 +62,7 @@ const Insights: React.FC = () => (
       <div className="surface surface-interactive rounded-card p-7">
         <h3 className="text-lg font-semibold">What a flag costs</h3>
         <p className="mt-2.5 text-fog-400 leading-relaxed">
-          Catching 82% of strokes means flagging people who will not have one. Roughly 1 in 6
+          Catching 82% of strokes means flagging people who will not have one. Roughly 1 in 7
           flagged cases is a real stroke.
         </p>
       </div>

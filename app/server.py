@@ -377,23 +377,27 @@ def predict_stroke_risk():
         # Calculate risk category with realistic medical thresholds
         risk_percentage = primary_probability * 100
 
-        # Bands are anchored on the fitted decision threshold rather than fixed
-        # constants, so "Moderate Risk" starts exactly where the model would
-        # flag the case. Above the threshold the remaining headroom to 100 is
-        # split in three; multiplying t instead would push the top bands past
-        # 100 and make them unreachable whenever t is near 0.5.
-        t = DECISION_THRESHOLD * 100
-        step = (100 - t) / 3
-        if risk_percentage < t * 0.5:
+        # Probabilities are calibrated, so risk_percentage is a real estimated
+        # probability: people scoring 10-15% had a 12.9% stroke rate in the
+        # data. That means outputs top out around 26%, not 100%, and bands
+        # anchored on headroom-to-100 would leave the top two unreachable.
+        #
+        # Bands are multiples of the population base rate instead, which is
+        # also what a reader actually wants to know: not "26%" in isolation,
+        # but "five times the average".
+        base_rate = MODEL_METADATA.get('positive_rate', 0.0487) * 100
+        risk_multiple = risk_percentage / base_rate if base_rate else 0.0
+
+        if risk_multiple < 0.5:
             risk_category = 'Very Low Risk'
             risk_color = '#10B981'
-        elif risk_percentage < t:
+        elif risk_multiple < 1.0:
             risk_category = 'Low Risk'
             risk_color = '#34D399'
-        elif risk_percentage < t + step:
+        elif risk_multiple < 2.0:
             risk_category = 'Moderate Risk'
             risk_color = '#F59E0B'
-        elif risk_percentage < t + 2 * step:
+        elif risk_multiple < 4.0:
             risk_category = 'High Risk'
             risk_color = '#EF4444'
         else:
@@ -433,6 +437,9 @@ def predict_stroke_risk():
             'risk_color': risk_color,
             'confidence': confidence,
             'flagged': bool(primary_probability >= DECISION_THRESHOLD),
+            'risk_multiple': round(risk_multiple, 1),
+            'population_base_rate': round(base_rate, 2),
+            'calibrated': bool(MODEL_METADATA.get('calibrated', False)),
             'decision_threshold': DECISION_THRESHOLD,
             # Measured on a held-out split by ml/train_stroke_model.py, not typed in.
             'model_performance': MODEL_METADATA.get('metrics_holdout', {}),

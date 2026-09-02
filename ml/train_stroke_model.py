@@ -28,10 +28,12 @@ sys.path.insert(0, str(ROOT))
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
+    brier_score_loss,
     confusion_matrix,
     precision_score,
     recall_score,
@@ -93,22 +95,32 @@ def main():
     # min_samples_leaf=100 looks aggressive for 249 positives, but the CV curve
     # is flat from 60 to 130 (0.8423 to 0.8425), so the choice is not delicate.
     # Looser forests measurably overfit: min_samples_leaf=8 scored 0.8359.
+    # Every candidate is wrapped in sigmoid calibration. Balanced class weights
+    # deliberately distort probabilities to force the model to take a 4.87%
+    # positive class seriously; excellent for ranking, wrong for display. The
+    # uncalibrated model told people scoring 0.80+ that their risk was 80% when
+    # the real rate in that group was 20.6%. Calibration cuts the mean gap
+    # between the number shown and reality from 0.3693 to 0.0104, improves the
+    # Brier score from 0.1503 to 0.0424, and does not cost AUC.
+    def calibrated(estimator):
+        return CalibratedClassifierCV(estimator, method="sigmoid", cv=5)
+
     candidates = {
-        "random_forest": RandomForestClassifier(
+        "random_forest": calibrated(RandomForestClassifier(
             n_estimators=800,
             min_samples_leaf=100,
             max_features=0.5,
             class_weight="balanced_subsample",
             random_state=SEED,
             n_jobs=-1,
-        ),
+        )),
         # Kept as comparators so the selection below stays a measurement
         # rather than an assertion.
-        "logistic_regression": make_pipeline(
+        "logistic_regression": calibrated(make_pipeline(
             StandardScaler(),
             LogisticRegression(C=0.05, class_weight="balanced", max_iter=3000, random_state=SEED),
-        ),
-        "hist_gradient_boosting": HistGradientBoostingClassifier(
+        )),
+        "hist_gradient_boosting": calibrated(HistGradientBoostingClassifier(
             max_iter=300,
             learning_rate=0.02,
             max_leaf_nodes=7,
@@ -116,7 +128,7 @@ def main():
             l2_regularization=3.0,
             class_weight="balanced",
             random_state=SEED,
-        ),
+        )),
     }
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
@@ -178,6 +190,8 @@ def main():
                 "positive_rate": float(y.mean()),
                 "metrics_holdout": metrics,
                 "majority_class_accuracy": float(1 - y.mean()),
+                "calibrated": True,
+                "brier_score": float(brier_score_loss(y_test, proba)),
                 "sklearn": __import__("sklearn").__version__,
             },
             indent=2,

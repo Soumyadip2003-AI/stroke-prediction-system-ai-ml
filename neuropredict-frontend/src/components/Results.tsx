@@ -11,7 +11,15 @@ const RADIUS = 70;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
-  const percentage = Math.min(100, Math.max(0, Math.round(data?.risk_percentage ?? 0)));
+  // risk_percentage is a calibrated probability: people the model scores at
+  // 10-15% had a 12.9% stroke rate in the data. So it tops out near 26%, not
+  // 100%. Showing that on a 0-100 arc would leave someone at genuine high risk
+  // looking a quarter full, so the arc tracks the multiple of the population
+  // average (capped at 5x) while the number stays the true probability.
+  const percentage = Math.max(0, data?.risk_percentage ?? 0);
+  const multiple = data?.risk_multiple ?? 0;
+  const baseRate = data?.population_base_rate ?? 4.87;
+  const arcFraction = Math.min(1, multiple / 5);
   const colour = data?.risk_color ?? '#667eea';
 
   const handleDownload = () => {
@@ -48,7 +56,7 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <div data-reveal className="flex flex-col items-center text-center">
-        <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label={`Estimated stroke risk: ${percentage} percent, ${data?.risk_category ?? 'unclassified'}`}>
+        <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label={`Estimated stroke risk: ${percentage.toFixed(1)} percent, ${multiple} times the population average, ${data?.risk_category ?? 'unclassified'}`}>
           <circle cx="90" cy="90" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="12" />
           <circle
             cx="90"
@@ -59,11 +67,11 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
             strokeWidth="12"
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
-            strokeDashoffset={CIRCUMFERENCE * (1 - percentage / 100)}
+            strokeDashoffset={CIRCUMFERENCE * (1 - arcFraction)}
             transform="rotate(-90 90 90)"
           />
-          <text x="90" y="84" textAnchor="middle" className="fill-fog-100" style={{ fontSize: 34, fontWeight: 700 }}>
-            {percentage}%
+          <text x="90" y="84" textAnchor="middle" className="fill-fog-100" style={{ fontSize: 32, fontWeight: 700 }}>
+            {percentage < 1 ? percentage.toFixed(1) : Math.round(percentage)}%
           </text>
           <text x="90" y="108" textAnchor="middle" className="fill-fog-400" style={{ fontSize: 13 }}>
             {data?.risk_category ?? ''}
@@ -71,9 +79,15 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
         </svg>
 
         <h2 className="mt-8 text-3xl sm:text-4xl font-bold tracking-tight">Your risk assessment</h2>
-        <p className="mt-4 text-lg text-fog-400 max-w-[54ch]">
-          An estimate based on the ten answers you gave. It is not a diagnosis.
-          {data?.confidence ? ` Model confidence: ${data.confidence}.` : ''}
+        <p className="mt-4 text-2xl font-semibold text-fog-100">
+          {multiple >= 1
+            ? `${multiple}x the average person's risk`
+            : `Below the average person's risk`}
+        </p>
+        <p className="mt-3 text-fog-400 max-w-[56ch]">
+          The average across the 5,110 people in the dataset is {baseRate}%. This estimate is
+          calibrated: of people scored around 15%, about 15% went on to have a stroke. It is not
+          a diagnosis.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
