@@ -1,0 +1,25 @@
+# Optional extras for the experiment and training scripts in ml/.
+# Not needed to run the API. Install with:  pip install -r requirements-ml.txt
+#
+# ml/train_stroke_model.py, which produces the model actually served, needs
+# none of these; it runs on requirements.txt alone.
+
+-r requirements.txt
+
+# lightgbm 4.1.0 ships no wheel for macOS arm64 / Python 3.11 and its
+# CMakeLists is rejected by CMake 4.x, which failed the whole install and
+# silently took xgboost, catboost, optuna, imblearn and mlxtend down with it.
+lightgbm==4.5.0
+
+xgboost==2.0.3
+catboost==1.2.2
+optuna==3.4.0
+# 0.11.0 imports parse_version from sklearn.utils, which scikit-learn 1.5
+# removed, so every script using SMOTE died on import.
+imbalanced-learn==0.13.0
+mlxtend==0.22.0
+
+# Imported by several ml/ scripts but never previously declared anywhere.
+matplotlib==3.8.4
+seaborn==0.13.2
+shap==0.45.1
