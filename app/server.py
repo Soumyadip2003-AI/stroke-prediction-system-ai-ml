@@ -490,11 +490,15 @@ def predict_stroke_risk():
 
         # Prepare response
         response = {
-            'prediction': primary_prediction,
             'probability': primary_probability,
             'risk_percentage': risk_percentage,
             'risk_category': risk_category,
             'risk_color': risk_color,
+            # model.predict() thresholds at 0.5, which is meaningless on a
+            # 4.87% positive class and is the entire reason a threshold is
+            # fitted. Left as-is, 'prediction' said 0 for people 'flagged'
+            # said were at risk, for every case between 4% and 50%.
+            'prediction': int(primary_probability >= DECISION_THRESHOLD),
             'flagged': bool(primary_probability >= DECISION_THRESHOLD),
             'risk_multiple': round(risk_multiple, 1),
             'population_base_rate': round(base_rate, 2),

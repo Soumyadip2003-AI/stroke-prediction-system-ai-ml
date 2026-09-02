@@ -85,6 +85,11 @@ def main():
             reassuring = body["risk_category"] in ("Very Low Risk", "Low Risk")
             if reassuring == body["flagged"]:
                 contradictions += 1
+            # 'prediction' must use the fitted threshold too. Using sklearn's
+            # 0.5 default made it disagree with 'flagged' for everyone between
+            # the threshold and 50%.
+            if bool(body["prediction"]) != body["flagged"]:
+                contradictions += 1
     assert contradictions == 0, f"{contradictions} cases labelled reassuringly while flagged"
     print("OK  risk band and flag agree on every probe")
 

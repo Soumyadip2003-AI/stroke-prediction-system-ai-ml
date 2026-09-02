@@ -50,17 +50,23 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
     (process.env.REACT_APP_API_BASE as string) ||
     'https://stroke-prediction-system-ai-ml.onrender.com';
 
+  // Defaults must not invent a risk profile. These previously described a
+  // 55-year-old hypertensive smoker with elevated glucose, so anyone who
+  // clicked through without editing was shown "Moderate Risk, flagged" for a
+  // person who does not exist. Clinical flags now default to absent and the
+  // numbers to dataset medians, so risk only rises from what you actually
+  // enter.
   const [formData, setFormData] = useState({
-    age: 55,
-    gender: 'Male',
-    ever_married: 'Yes',
-    hypertension: 'Yes',
+    age: 45,
+    gender: 'Female',
+    ever_married: 'No',
+    hypertension: 'No',
     heart_disease: 'No',
-    avg_glucose_level: 150,
-    bmi: 29,
+    avg_glucose_level: 92,
+    bmi: 28,
     work_type: 'Private',
     residence_type: 'Urban',
-    smoking_status: 'smokes',
+    smoking_status: 'never smoked',
   });
 
   const handleInputChange = (field: string, value: any) => {
