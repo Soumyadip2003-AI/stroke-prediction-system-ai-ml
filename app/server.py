@@ -401,7 +401,13 @@ def predict_stroke_risk():
         # Handle both pandas DataFrame and numpy array cases
         if hasattr(processed, 'values'):
             # pandas DataFrame case
-            X_final = processed.values
+            # Keep the DataFrame, do not hand sklearn a bare .values array.
+            # The pipeline was fitted with column names, so passing them back
+            # makes sklearn verify the order. Stripping them silenced that
+            # check: the same features in reversed order scored 80.0% instead
+            # of 55.1%, with no error. Train/serve column drift is exactly what
+            # made the original model score 0.5605 AUC while looking healthy.
+            X_final = processed
         else:
             # numpy array case
             X_final = processed
