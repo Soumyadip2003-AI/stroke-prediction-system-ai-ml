@@ -45,7 +45,9 @@ const Insights: React.FC = () => (
           <p className="mt-5 text-xs text-fog-400 max-w-[54ch]">
             Held-out 20% split of the public stroke dataset (5,110 records), never seen during
             training or threshold fitting. Probabilities are calibrated, so the percentage shown is a
-            real estimated risk, not a score. Research figures, not a clinical validation.
+            real estimated risk rather than a score: below 25%, where 98% of people land, it is
+            accurate to within about one point. Above 30% it overstates, as the data barely
+            covers that range. Research figures, not a clinical validation.
           </p>
         </div>
       </div>

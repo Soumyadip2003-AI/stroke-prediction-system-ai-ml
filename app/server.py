@@ -419,26 +419,35 @@ def predict_stroke_risk():
         risk_percentage = primary_probability * 100
 
         # Probabilities are calibrated, so risk_percentage is a real estimated
-        # probability: people scoring 10-15% had a 12.9% stroke rate in the
-        # data. That means outputs top out around 26%, not 100%, and bands
-        # anchored on headroom-to-100 would leave the top two unreachable.
+        # probability and tops out well below 100. Two anchors matter and they
+        # must not disagree:
         #
-        # Bands are multiples of the population base rate instead, which is
-        # also what a reader actually wants to know: not "26%" in isolation,
-        # but "five times the average".
+        #   the fitted threshold  -> whether the case is flagged
+        #   the population rate   -> how the number reads to a person
+        #
+        # Anchoring the bands purely on base-rate multiples put the threshold
+        # (4.02%) inside the Low band (2.44% to 4.87%), so a case at 4.7% was
+        # labelled "Low Risk" while flagged=True. The Low/Moderate boundary is
+        # therefore the threshold itself: Moderate and above is exactly the set
+        # the model flags. Bands above it are multiples of the population rate.
         base_rate = MODEL_METADATA.get('positive_rate', 0.0487) * 100
         risk_multiple = risk_percentage / base_rate if base_rate else 0.0
+        t = DECISION_THRESHOLD * 100
 
-        if risk_multiple < 0.5:
+        # sorted() keeps the bands ordered even if a future threshold lands
+        # above 2x the base rate.
+        b1, b2, b3, b4 = sorted([t * 0.5, t, base_rate * 2, base_rate * 4])
+
+        if risk_percentage < b1:
             risk_category = 'Very Low Risk'
             risk_color = '#10B981'
-        elif risk_multiple < 1.0:
+        elif risk_percentage < b2:
             risk_category = 'Low Risk'
             risk_color = '#34D399'
-        elif risk_multiple < 2.0:
+        elif risk_percentage < b3:
             risk_category = 'Moderate Risk'
             risk_color = '#F59E0B'
-        elif risk_multiple < 4.0:
+        elif risk_percentage < b4:
             risk_category = 'High Risk'
             risk_color = '#EF4444'
         else:

@@ -72,6 +72,22 @@ def main():
     assert high - low > 0.20, f"spread {high - low:.3f} too flat to be discriminating"
     assert high >= meta["threshold"], "worst-case profile does not even get flagged"
 
+    # The risk band and the flag are computed from two different anchors (the
+    # population rate and the fitted threshold). They disagreed once: a case at
+    # 4.7% read "Low Risk" while flagged=True.
+    from app.server import app as flask_app
+
+    client = flask_app.test_client()
+    contradictions = 0
+    for age in range(1, 101, 7):
+        for flag in ("No", "Yes"):
+            body = client.post("/api/predict", json={**probe, "age": age, "hypertension": flag}).get_json()
+            reassuring = body["risk_category"] in ("Very Low Risk", "Low Risk")
+            if reassuring == body["flagged"]:
+                contradictions += 1
+    assert contradictions == 0, f"{contradictions} cases labelled reassuringly while flagged"
+    print("OK  risk band and flag agree on every probe")
+
     print(f"OK  model={meta['model']}  AUC={m['roc_auc']:.4f}  recall={m['recall']:.4f}")
     print(f"OK  low-risk {low * 100:.1f}%  high-risk {high * 100:.1f}%  spread {(high - low) * 100:.1f}pts")
 
