@@ -17,17 +17,27 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
   // looking a quarter full, so the arc tracks the multiple of the population
   // average (capped at 5x) while the number stays the true probability.
   const percentage = Math.max(0, data?.risk_percentage ?? 0);
-  const multiple = data?.risk_multiple ?? 0;
   const baseRate = data?.population_base_rate ?? 4.87;
+  // Derive rather than defaulting to 0: a backend that predates risk_multiple
+  // would otherwise report "below average" for a high-risk result.
+  const multiple =
+    data?.risk_multiple ?? (baseRate > 0 ? Math.round((percentage / baseRate) * 10) / 10 : 0);
   const arcFraction = Math.min(1, multiple / 5);
   const colour = data?.risk_color ?? '#667eea';
 
   const handleDownload = () => {
+    // 'Confidence' used to be here. The API always returned "Low" for every
+    // user once probabilities were calibrated, because it binned by risk
+    // magnitude rather than measuring confidence. Replaced with the multiple
+    // of the population rate, which is the number that gives the percentage
+    // meaning.
     const rows = [
       ['Generated At', new Date().toISOString()],
-      ['Risk Percentage', `${percentage}%`],
+      ['Estimated Stroke Risk', `${percentage.toFixed(1)}%`],
+      ['Population Average', `${baseRate}%`],
+      ['Times Average Risk', `${multiple}x`],
       ['Risk Category', `${data?.risk_category ?? ''}`],
-      ['Confidence', `${data?.confidence ?? ''}`],
+      ['Note', 'Calibrated screening estimate, not a diagnosis'],
     ];
     const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], {
       type: 'text/csv;charset=utf-8;',

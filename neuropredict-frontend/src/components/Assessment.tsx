@@ -97,7 +97,15 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
       });
 
       if (!response.ok) {
-        setError('The prediction service is unavailable right now. Please try again in a moment.');
+        // The API validates ranges and categories and returns 400 with a
+        // specific reason. Showing "service unavailable" for that would be
+        // both wrong and unactionable, so surface the real message.
+        const body = await response.json().catch(() => null);
+        setError(
+          response.status === 400 && body?.error
+            ? body.error
+            : 'The prediction service is unavailable right now. Please try again in a moment.'
+        );
         return;
       }
 

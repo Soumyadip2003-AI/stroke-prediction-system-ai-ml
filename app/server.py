@@ -309,6 +309,53 @@ def health_check():
         'decision_threshold': DECISION_THRESHOLD
     })
 
+# Accepted values per field. Anything outside these silently produced a
+# plausible-looking risk score before: preprocess_data coerces with
+# `get_value(x) or 0`, so None, [] and "abc" all became 0, and an unknown
+# category became an all-zero one-hot the model never saw in training.
+# On a health endpoint that is worse than an error, so this rejects instead.
+NUMERIC_RANGES = {
+    'age': (1, 100),
+    'avg_glucose_level': (50, 300),
+    'bmi': (10, 50),
+}
+
+CATEGORICAL_VALUES = {
+    'gender': {'male', 'female', 'other'},
+    'ever_married': {'yes', 'no', '0', '1'},
+    'hypertension': {'yes', 'no', '0', '1', 'true', 'false'},
+    'heart_disease': {'yes', 'no', '0', '1', 'true', 'false'},
+    'work_type': {'private', 'self-employed', 'children', 'govt_job', 'never_worked'},
+    'residence_type': {'urban', 'rural'},
+    'smoking_status': {'never smoked', 'formerly smoked', 'smokes', 'unknown'},
+}
+
+
+def validate_payload(data):
+    """Return an error string, or None when the payload is usable."""
+    for field, (low, high) in NUMERIC_RANGES.items():
+        raw = data.get(field)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+            return f"'{field}' must be a number, got {type(raw).__name__}"
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return f"'{field}' must be a number, got {raw!r}"
+        if value != value or value in (float('inf'), float('-inf')):
+            return f"'{field}' must be a finite number"
+        if not low <= value <= high:
+            return f"'{field}' must be between {low} and {high}, got {value:g}"
+
+    for field, allowed in CATEGORICAL_VALUES.items():
+        raw = data.get(field)
+        if raw is None:
+            continue  # presence is enforced by the required-field check
+        if str(raw).strip().lower() not in allowed:
+            return f"'{field}' must be one of {sorted(allowed)}, got {raw!r}"
+
+    return None
+
+
 @app.route('/api/predict', methods=['POST'])
 def predict_stroke_risk():
     """Predict stroke risk using advanced AI models with self-learning."""
@@ -318,8 +365,11 @@ def predict_stroke_risk():
             logger.error("No models loaded. Please ensure model files are available.")
             return jsonify({'error': 'No models loaded. Please ensure model files are available.'}), 500
 
-        # Get input data
-        data = request.json
+        # request.json raises on malformed bodies, which the generic handler
+        # below turned into a 500. A bad body is a client error.
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({'error': 'Request body must be a JSON object'}), 400
 
         # Validate required fields
         required_fields = ['age', 'gender', 'hypertension', 'heart_disease',
@@ -328,6 +378,10 @@ def predict_stroke_risk():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        validation_error = validate_payload(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
 
         # Preprocess data to match the 20 features models expect
         processed = preprocess_data(data)
@@ -400,23 +454,13 @@ def predict_stroke_risk():
             risk_category = 'Very High Risk'
             risk_color = '#DC2626'
 
-        # Confidence based on model agreement and risk level
-        if len(probabilities) > 1:
-            model_agreement = np.std(list(probabilities.values()))
-            if model_agreement < 0.1 and risk_percentage > 30:
-                confidence = 'High'
-            elif model_agreement < 0.2 or risk_percentage > 20:
-                confidence = 'Medium'
-            else:
-                confidence = 'Low'
-        else:
-            # Single model confidence based on risk level
-            if risk_percentage > 50:
-                confidence = 'High'
-            elif risk_percentage > 25:
-                confidence = 'Medium'
-            else:
-                confidence = 'Low'
+        # 'confidence' used to bin by risk magnitude: >50 High, >25 Medium,
+        # else Low. That is not confidence, it is the risk number again under
+        # another name, and once probabilities were calibrated (they top out
+        # near 26%) it returned 'Low' for every single user, implying the
+        # model was unsure about everyone. A single model has no honest
+        # per-prediction confidence without conformal intervals or ensemble
+        # variance, so the field is gone rather than invented.
 
         # Generate health analysis
         health_analysis = generate_health_analysis(data)
@@ -431,7 +475,6 @@ def predict_stroke_risk():
             'risk_percentage': risk_percentage,
             'risk_category': risk_category,
             'risk_color': risk_color,
-            'confidence': confidence,
             'flagged': bool(primary_probability >= DECISION_THRESHOLD),
             'risk_multiple': round(risk_multiple, 1),
             'population_base_rate': round(base_rate, 2),
@@ -450,7 +493,7 @@ def predict_stroke_risk():
         
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error', 'detail': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 def generate_health_analysis(data):
     """Generate health analysis based on input data."""
