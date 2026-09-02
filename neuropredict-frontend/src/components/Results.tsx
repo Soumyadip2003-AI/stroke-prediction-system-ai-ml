@@ -96,8 +96,11 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
         </p>
         <p className="mt-3 text-fog-400 max-w-[56ch]">
           The average across the 5,110 people in the dataset is {baseRate}%. This estimate is
-          calibrated: of people scored around 15%, about 15% went on to have a stroke. It is not
-          a diagnosis.
+          calibrated: of people scored around 15%, about 15% went on to have a stroke.
+          {percentage > 30
+            ? ' Above 30% the estimate overstates, because few people in the data score that high.'
+            : ''}{' '}
+          It is not a diagnosis.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
