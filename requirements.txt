@@ -1,23 +1,15 @@
-# Core ML dependencies
+# Runtime dependencies for the API that backend.py / gunicorn serves.
+# The served model is a scikit-learn soft-voting ensemble, so nothing here
+# needs xgboost, lightgbm, catboost or optuna. Training extras live in
+# requirements-ml.txt and are deliberately NOT installed on the server:
+# a broken training dependency must never be able to block a deploy.
+
 pandas==2.1.3
 numpy==1.26.2
 scikit-learn==1.5.2
+scipy==1.11.4
 joblib==1.3.2
 
-# Flask backend for production deployment
 Flask==3.0.0
 Flask-CORS==4.0.0
 gunicorn==21.2.0
-
-# Advanced ML libraries (optional for deployment)
-xgboost==2.0.3
-lightgbm==4.1.0
-catboost==1.2.2
-optuna==3.4.0
-
-# Data processing
-scipy==1.11.4
-
-# Additional libraries
-imbalanced-learn==0.11.0
-mlxtend==0.22.0

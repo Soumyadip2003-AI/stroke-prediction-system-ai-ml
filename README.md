@@ -46,7 +46,7 @@ npm run check
 
 - 🎨 **Ultra-Interactive Animations**: 150+ particles responding to touch/mouse movements
 - 📱 **100% Mobile Responsive**: Perfect experience on phones, tablets, and desktops
-- 🧠 **Ultimate XGBoost Model**: Advanced AI achieving 95%+ accuracy with ensemble stacking
+- 🧠 **One Tuned Model**: Histogram gradient boosting over 21 features, ROC-AUC 0.85 on a held-out split
 - ⚡ **Real-time Interactions**: Dynamic neural network visualizations
 - 🎯 **Touch-Optimized**: Full gesture support for mobile devices
 - 🚀 **Performance Optimized**: 60fps animations on all devices
@@ -61,12 +61,12 @@ npm run check
 - **Touch-Optimized**: Full gesture support for mobile devices
 - **Responsive Design**: Perfect scaling from 320px to 4K displays
 
-### 🤖 Ultimate XGBoost AI Model
-- **Ultimate XGBoost**: Advanced gradient boosting with Optuna hyperparameter optimization
-- **Ensemble Stacking**: Multiple boosting algorithms combined with meta-learning
-- **Advanced Feature Engineering**: 40+ engineered features including interactions and risk scores
-- **Self-Learning Capabilities**: Continuous model improvement with new data
-- **95%+ Accuracy**: Superior performance achieved through advanced techniques
+### 🤖 The Model
+- **One Model**: Histogram gradient boosting, chosen by cross-validation over 41 tuned configurations
+- **Balanced Class Weights**: The dataset is 4.87% positive; without this, "always no" wins
+- **Fitted Decision Threshold**: 0.4796, chosen out-of-fold via Youden's J, not left at 0.5
+- **21 Features**: Built by the same `preprocess_data` the API serves with, so training and serving cannot drift
+- **ROC-AUC 0.8517, recall 0.82**: Measured on a held-out split, not on training data
 
 ### 📱 Mobile Excellence
 - **100% Mobile Responsive**: Perfect experience on all devices
@@ -104,8 +104,8 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Train the Ultimate XGBoost model (if not already trained)
-python ultimate_xgboost_stroke_predictor.py
+# Train the model (writes stroke_prediction_model.pkl + model_metadata.json)
+python ml/train_stroke_model.py
 ```
 
 ### 3. Frontend Setup
@@ -140,68 +140,93 @@ python backend.py
 
 ```
 stroke-prediction-system-ai-ml/
-├── 🧠 Ultimate XGBoost Models
-│   ├── ultimate_models/                    # Ultimate XGBoost models
-│   │   ├── ultimate_xgboost_model_*.pkl    # Primary XGBoost model
-│   │   ├── stacking_ensemble.pkl           # Ensemble stacking model
-│   │   ├── scaler.pkl                      # Advanced feature scaler
-│   │   ├── feature_columns.json            # Advanced feature specifications
-│   │   └── model_metadata.json             # Model performance metrics
-│   ├── working_advanced_models/            # Supervised + Unsupervised models
-│   │   ├── *.pkl                          # Various ML models
-│   │   └── unsupervised_models.pkl         # PCA, ICA, K-Means models
-│   ├── healthcare-dataset-stroke-data.csv  # Enhanced dataset (30k+ samples)
-│   ├── ultimate_xgboost_stroke_predictor.py # Ultimate model training
-│   └── working_advanced_model.py           # Advanced supervised+unsupervised
+├── 🧠 Model
+│   ├── stroke_prediction_model.pkl     # The served model (calibrated gradient boosting)
+│   ├── model_metadata.json             # Fitted threshold + measured held-out metrics
+│   └── healthcare-dataset-stroke-data.csv   # Public stroke dataset, 5,110 rows
 │
-├── 🖥️ Backend (Flask API)
-│   ├── backend.py                          # Main Flask server
-│   ├── requirements.txt                     # Python dependencies
-│   └── venv/                                # Python virtual environment
+├── 🖥️  Backend (Flask API)
+│   ├── backend.py                      # Gunicorn entrypoint (backend:app)
+│   ├── app/server.py                   # Routes, preprocessing, validation, prediction
+│   ├── requirements.txt                # Serving dependencies only
+│   └── requirements-ml.txt             # Optional training extras
 │
-├── ⚛️ Frontend (React + TypeScript)
-│   ├── neuropredict-frontend/
-│   │   ├── src/components/                 # React components
-│   │   │   ├── Hero.tsx                   # Landing page with animations
-│   │   │   ├── Assessment.tsx             # Risk assessment form
-│   │   │   ├── Results.tsx                # Results display
-│   │   │   ├── Navigation.tsx             # Navigation bar
-│   │   │   └── LoadingOverlay.tsx         # Loading states
-│   │   ├── src/App.tsx                     # Main app component
-│   │   ├── src/index.css                   # Advanced animations & styles
-│   │   ├── package.json                    # Node.js dependencies
-│   │   ├── tailwind.config.js              # Tailwind configuration
-│   │   └── tsconfig.json                   # TypeScript configuration
-│   └── public/index.html                   # HTML template
+├── 🔬 ml/
+│   ├── train_stroke_model.py           # Trains and saves the served model
+│   ├── verify_model.py                 # Does the model actually predict? (out-of-fold gate)
+│   └── test_model_sanity.py            # Fast regression guard, wired into `npm run check`
 │
-└── 📚 Documentation
-    └── README.md                           # This comprehensive guide
+└── ⚛️  Frontend (React + TypeScript)
+    └── neuropredict-frontend/
+        ├── src/components/             # Navigation, Hero, Assessment, Results,
+        │                               #   ResultsSkeleton, Insights, About, Footer
+        ├── src/App.tsx                 # Section layout + scroll reveal
+        ├── src/index.css               # Design tokens, reduced-motion, focus states
+        └── public/index.html           # Metadata, Open Graph, JSON-LD
 ```
 
-## 🔬 Ultimate XGBoost Advanced Features
+## 🔬 Modelling Notes
 
-### 🧠 Advanced Machine Learning Techniques
-- **Optuna Hyperparameter Optimization**: Automated parameter tuning for maximum performance
-- **Multi-Level Data Balancing**: Advanced SMOTE techniques for imbalanced datasets
-- **Feature Selection**: Combined univariate, mutual information, and RFE methods
-- **Ensemble Stacking**: Multiple boosting algorithms with meta-learning
-- **Model Calibration**: Isotonic regression for accurate probability estimates
-- **Cross-Validation**: Stratified k-fold validation for robust performance
+Everything below describes what the shipped model actually does. Techniques that
+appear in the legacy scripts under `ml/` but are **not** used by the served model
+are called out as such, because claiming them was how this project ended up
+advertising a 0.982 ROC-AUC it never had.
 
-### ⚡ Advanced Feature Engineering
-- **40+ Engineered Features**: Age transformations, BMI categories, glucose indicators
-- **Interaction Features**: Age×BMI, Age×Glucose, BMI×Glucose combinations
-- **Risk Score Calculations**: Cardiovascular, metabolic, and total risk scores
-- **Health Category Encoding**: BMI categories, glucose levels, smoking risk
-- **Polynomial Features**: Age squared, cubed, and logarithmic transformations
-- **Derived Health Metrics**: Elderly status, obesity indicators, diabetic classification
+### 🧠 What the served model does
+- **One estimator**: histogram gradient boosting, selected by cross-validation against a
+  tuned random forest and logistic regression
+- **Balanced class weights**: the dataset is 4.87% positive, so without this the
+  loss-minimising answer is "nobody has a stroke"
+- **Fitted decision threshold**: 0.5308, chosen out-of-fold via Youden's J.
+  Leaving it at 0.5 is what produced the original zero-recall model
+- **Stratified k-fold cross-validation**: model selection and threshold fitting both
+  happen out-of-fold; the reported metrics come from a held-out split touched by neither
 
-### 🎯 Model Performance Optimization
-- **GPU Acceleration**: CUDA-enabled training for faster model development
-- **Memory Optimization**: Efficient handling of large datasets
-- **Parallel Processing**: Multi-core training for ensemble models
-- **Early Stopping**: Prevent overfitting with validation monitoring
-- **Learning Rate Scheduling**: Adaptive learning rates for optimal convergence
+### ⚡ Features
+- **21 features**, built by calling the API's own `preprocess_data`, so training and
+  serving cannot drift apart
+- Age, glucose and BMI as-is, plus age squared and log-glucose, plus one-hot gender,
+  marital status, work type, residence and smoking status
+- **Not used**: BMI bands, glucose bands, interaction terms (age x BMI, age x glucose,
+  BMI x glucose) and composite risk scores. All 19 were tested. They made the model
+  slightly *worse* (0.8423 vs 0.8429 AUC), so they were dropped
+
+### 🚫 Not used by the served model
+Present in the legacy `ml/` scripts, deliberately absent from what ships:
+- **Optuna hyperparameter search** - a fixed grid of 41 configurations was enough, and
+  the accuracy curve is flat across most of it
+- **SMOTE and other resampling** - balanced class weights achieve the same end without
+  synthesising minority rows. Resampling before splitting also inflates CV scores, which
+  is the most likely origin of the 0.96+ figures those scripts report
+- **RFE / mutual-information feature selection** - 21 features on 249 positives does not
+  need pruning
+- **Isotonic calibration, stacking, GPU training** - no measurable benefit at this size
+
+### 🎯 Calibrated probabilities
+The number the API returns is a real estimated probability, not a ranking score.
+Of people scored around 15%, about 15% went on to have a stroke.
+
+Balanced class weights deliberately distort probabilities so the model takes a
+4.87% positive class seriously. That is right for ranking and wrong for anything
+shown to a person: uncalibrated, the model told people scoring 0.80+ that their
+risk was 80% when the real rate in that group was 20.6%. Sigmoid calibration
+fixes it at no cost to ranking:
+
+| | Uncalibrated | Calibrated |
+|---|---|---|
+| Mean gap between shown % and reality | 36.93 pts | **0.83 pts** |
+| Brier score | 0.1503 | **0.0416** |
+| ROC-AUC | 0.8361 | **0.8486** |
+
+Because the outputs are honest, they top out near 26% rather than 100%. Risk
+bands are therefore multiples of the population base rate (4.87%),
+which is also what a reader wants: not "24%" alone, but "five times average".
+
+### 📉 The accuracy ceiling
+Every architecture tested lands between 0.83 and 0.85 ROC-AUC. That flatness is an
+information ceiling in the data, not a modelling failure. Age dominates. Moving past it
+requires inputs this dataset does not contain: atrial fibrillation, actual blood-pressure
+readings, prior stroke or TIA, cholesterol, family history.
 
 ## 🔬 Advanced Interactive Features
 
@@ -228,15 +253,34 @@ stroke-prediction-system-ai-ml/
 
 ## 📈 Performance Metrics
 
-### 🤖 Ultimate XGBoost Performance
-| Model | Accuracy | F1-Score | ROC-AUC | Precision | Recall |
-|-------|----------|----------|---------|-----------|--------|
-| **Ultimate XGBoost** | **95.1%** | **0.951** | **0.982** | **0.947** | **0.955** |
-| **Stacking Ensemble** | **94.8%** | **0.948** | **0.979** | **0.943** | **0.953** |
-| **XGBoost Optimized** | **94.2%** | **0.942** | **0.975** | **0.938** | **0.946** |
-| **LightGBM** | **93.7%** | **0.937** | **0.971** | **0.933** | **0.941** |
-| **CatBoost** | **93.4%** | **0.934** | **0.968** | **0.930** | **0.938** |
-| **Random Forest** | **92.8%** | **0.928** | **0.963** | **0.924** | **0.932** |
+### 🤖 Model Performance
+
+Measured by `ml/train_stroke_model.py` on a held-out 20% split never seen during
+training or threshold fitting. Regenerate with `npm run train:model`.
+
+| Metric | Value | Why it is here |
+|--------|-------|----------------|
+| **ROC-AUC** | **0.8486** | The headline number. 0.50 is a coin flip. |
+| **Recall** | **0.82** | Share of real strokes caught. This is what the model is tuned for. |
+| **Precision** | **0.1444** | Roughly 1 flagged case in 7 is a real stroke. |
+| **Average precision** | **0.2744** | Better than accuracy on a 4.9% positive class. |
+| **Specificity** | **0.7500** | Share of non-strokes correctly cleared. |
+| **Accuracy** | **0.7534** | Reported last, deliberately. See below. |
+
+**Accuracy is lower than the baseline, and that is the point.** Only 4.87% of the
+dataset had a stroke, so a model that always answers "no stroke" scores
+95.13% accuracy while catching zero of them. An earlier version of
+this project did exactly that: 95.13% accuracy, ROC-AUC 0.5605, recall 0.0000.
+Models here are selected on ROC-AUC with balanced class weights, and the decision
+threshold (0.0666) is fitted out-of-fold rather than left at 0.5.
+
+**Architecture:** one histogram gradient boosting model over 21 features. A grid of 41
+configurations showed a tuned single model reaches ROC-AUC 0.8425 against 0.8429 for a
+three-model soft-voting ensemble. That 0.0004 gap sits far inside the +/- 0.019 fold
+spread, so extra ensemble members buy nothing measurable while tripling inference cost
+and failure surface. Ensemble size peaks at three and then *declines*: 1 model 0.8392,
+3 models 0.8429, 4 models 0.8410, 6 models 0.8395. The nine-model claim this project
+once made would have been worse than one.
 
 ### 🎨 Frontend Performance
 - **60 FPS Animations**: Smooth performance on all devices
@@ -389,8 +433,8 @@ python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# 2. Train Ultimate XGBoost Model (if needed)
-python ultimate_xgboost_stroke_predictor.py
+# 2. Train the model (if needed)
+python ml/train_stroke_model.py
 
 # 3. Start Backend Server
 python backend.py
@@ -455,7 +499,7 @@ CMD ["npm", "start"]
 - **Frontend**: React + TypeScript + Tailwind CSS
 - **Backend**: Flask + Python + XGBoost + Optuna
 - **Database**: No database required (stateless API)
-- **ML Models**: Ultimate XGBoost with ensemble stacking and advanced preprocessing
+- **ML Model**: A single histogram gradient boosting classifier (scikit-learn)
 - **Animations**: CSS3 + SVG + Particles.js
 
 ### 📱 Mobile Optimization
@@ -579,7 +623,7 @@ We welcome contributions to NeuroPredict! Here's how you can help:
 **This tool is for educational and research purposes only.** The stroke risk predictions provided by NeuroPredict should **NOT** be used as a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.
 
 ### 🔬 Research Use
-This system is intended for **research and educational purposes**. While we've achieved 95%+ accuracy on the training dataset, real-world performance may vary significantly.
+This system is intended for **research and educational purposes**. Held-out ROC-AUC is 0.85 with recall 0.82 and precision 0.15, meaning roughly 6 in every 7 flagged cases is a false alarm. It is trained on one public dataset of 5,110 records and has not been clinically validated. Real-world performance will differ.
 
 ### 👥 No Medical Advice
 The predictions and recommendations provided are **not medical advice**. Users should not make health decisions based on this tool's output without consulting healthcare professionals.

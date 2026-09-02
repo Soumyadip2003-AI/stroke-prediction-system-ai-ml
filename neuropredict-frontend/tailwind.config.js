@@ -6,30 +6,33 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        'inter': ['Inter', 'sans-serif'],
+        'inter': ['Inter', 'system-ui', 'sans-serif'],
       },
-      animation: {
-        'float': 'float 6s ease-in-out infinite',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'bounce-slow': 'bounce 2s infinite',
-        'spin-slow': 'spin 3s linear infinite',
-        'gradient': 'gradient 15s ease infinite',
-        'neural': 'neural 2s ease-in-out infinite',
+      colors: {
+        // Brand accent preserved from the original identity.
+        accent: '#667eea',
+        'accent-deep': '#764ba2',
+        // One cool-grey neutral family, harmonised to the indigo accent.
+        ink: {
+          900: '#0b0d12',
+          800: '#12151d',
+          700: '#1a1e29',
+          600: '#252b3a',
+        },
+        fog: {
+          100: '#eef1f6',
+          300: '#c3cad8',
+          400: '#98a1b4',
+        },
       },
-      keyframes: {
-        float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
-        },
-        gradient: {
-          '0%, 100%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-        },
-        neural: {
-          '0%, 100%': { opacity: '0.3' },
-          '50%': { opacity: '1' },
-        }
-      }
+      borderRadius: {
+        // One radius scale: pill for interactive, card for surfaces, input for fields.
+        'card': '16px',
+        'input': '8px',
+      },
+      transitionTimingFunction: {
+        'ease-out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
     },
   },
   plugins: [],

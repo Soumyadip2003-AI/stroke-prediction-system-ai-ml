@@ -6,7 +6,7 @@ This Flask backend provides API endpoints for the React frontend to interact wit
 the advanced machine learning models for stroke risk prediction.
 """
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 try:
     import pandas as pd
@@ -41,185 +41,79 @@ def health():
 
 # Global variables for models
 models = {}
-scalers = {}
 feature_columns = None
-unsupervised = {}
-feature_selector = None
+
+# True only when every real model failed to load and a stub is standing in.
+# /api/health reports this, so a dead deployment cannot look healthy.
+using_mock_model = False
+
+# Written by ml/train_stroke_model.py. Carries the decision threshold fitted
+# out-of-fold and the held-out metrics, so nothing here is hardcoded.
+def _load_model_metadata():
+    try:
+        with open('model_metadata.json') as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+MODEL_METADATA = _load_model_metadata()
+
+# model_metadata.json is required, not optional: it carries the fitted decision
+# threshold and the population rate that risk_category and flagged are derived
+# from. Without it the threshold silently fell back to 0.5, which on calibrated
+# probabilities that top out near 50% under-flags genuinely high-risk cases
+# while /api/health still reported "healthy". Predictions are refused instead.
+METADATA_OK = bool(MODEL_METADATA.get('threshold') and MODEL_METADATA.get('features'))
+if not METADATA_OK:
+    logger.error(
+        "model_metadata.json missing or incomplete. Predictions are disabled: "
+        "risk categories and flagging would be wrong. Run `npm run train:model`."
+    )
+# 0.5 is the wrong default on a 4.9% positive class; the trained threshold
+# is far lower. Fall back to it only if the metadata file is missing.
+DECISION_THRESHOLD = float(MODEL_METADATA.get('threshold', 0.5))
 
 def load_models():
-    """Load all trained models and components."""
-    global models, scalers, feature_columns, unsupervised, feature_selector
+    """Load the served model and the feature order it was trained on.
+
+    Exactly one model ships: the artifact written by ml/train_stroke_model.py,
+    which is itself a soft-voting ensemble. The previous version searched about
+    forty paths for eight more models that do not exist, and any that had
+    loaded would have been handed the 21 features this module produces
+    regardless of what they were trained on, then folded into the confidence
+    calculation.
+    """
+    global models, feature_columns, using_mock_model
 
     try:
-        # Try to load the main stroke prediction model first
-        main_model_loaded = False
-        try:
-            models['main'] = joblib.load('stroke_prediction_model.pkl')
-            logger.info("✅ Loaded main stroke prediction model successfully")
-            main_model_loaded = True
-        except Exception as e:
-            logger.error(f"❌ Error loading main model: {str(e)}")
-            # Create a mock model for testing/development
-            class MockModel:
-                def predict(self, X):
-                    return [0]  # Mock prediction (no stroke)
-                def predict_proba(self, X):
-                    return [[0.8, 0.2]]  # Mock probabilities (80% confidence)
+        models['main'] = joblib.load('stroke_prediction_model.pkl')
+        logger.info("Loaded model: %s", MODEL_METADATA.get('model', 'unknown'))
+    except Exception as exc:
+        logger.error("Could not load stroke_prediction_model.pkl: %s", exc)
 
-            models['main'] = MockModel()
-            logger.warning("⚠️ Using mock model due to sklearn architecture issues")
-            main_model_loaded = True
+        class MockModel:
+            """Stand-in so the process still boots. /api/health reports it."""
 
-        # Load ensemble model (try multiple locations)
-        ensemble_loaded = False
-        for ensemble_path in ['advanced_stroke_model_ensemble.pkl', 'models/voting_ensemble.pkl', 'working_advanced_models/ensemble_model.pkl', 'advanced_models/ensemble_model.pkl', 'voting_ensemble.pkl']:
-            try:
-                models['ensemble'] = joblib.load(ensemble_path)
-                logger.info(f"Loaded ensemble model from {ensemble_path}")
-                ensemble_loaded = True
-                break
-            except FileNotFoundError:
-                continue
+            def predict(self, X):
+                return [0]
 
-        if not ensemble_loaded:
-            logger.warning("No ensemble found, will use individual models")
+            def predict_proba(self, X):
+                return [[0.8, 0.2]]
 
-        # Load all 9 models from the complete GPU training system
-        model_names = ['randomforest', 'gradientboosting', 'extratrees', 'balanced_rf', 'mlpclassifier', 'adaboost', 'svm', 'lightgbm']
-        for name in model_names:
-            model_loaded = False
+        models['main'] = MockModel()
+        using_mock_model = True
+        logger.warning("Serving a mock model. Predictions are meaningless until this is fixed.")
 
-            # Try complete 9-model system first, then fallback to other locations
-            complete_model_paths = [
-                f'complete_gpu_models/{name}_model.pkl',
-                f'complete_gpu_models/{name}_gpu_model.pkl',
-                f'gpu_models/{name}_model.pkl',
-                f'gpu_models/{name}_gpu_model.pkl',
-                f'models/{name}_model.pkl',
-                f'advanced_stroke_model_{name}.pkl',
-                f'working_advanced_models/{name}_model.pkl',
-                f'advanced_models/{name}_model.pkl',
-                f'{name}_model.pkl'
-            ]
+    # Authoritative feature order, written by the trainer from this same
+    # preprocess_data.
+    # model_metadata.json is authoritative: the trainer writes it from the same
+    # preprocess_data this module serves with.
+    feature_columns = MODEL_METADATA.get('features') or []
+    if not feature_columns:
+        logger.error("No feature order in model_metadata.json")
 
-            for model_path in complete_model_paths:
-                try:
-                    model = joblib.load(model_path)
-                    models[name] = model
-                    logger.info(f"✅ Loaded {name} model successfully from {model_path}")
-                    model_loaded = True
-                    break
-                except FileNotFoundError:
-                    continue
-                except Exception as e:
-                    logger.warning(f"Error loading {name} model from {model_path}: {e}")
+    return len(models) > 0
 
-            if not model_loaded:
-                logger.info(f"Model {name} not found in any location")
-
-        # Load scaler
-        try:
-            scalers['main'] = joblib.load('scaler.pkl')
-            logger.info("✅ Loaded scaler successfully")
-        except Exception as e:
-            logger.warning(f"⚠️ Error loading scaler: {str(e)}")
-            scalers['main'] = None
-
-        # Try to load XGBoost if available - prioritize our ultimate model
-        try:
-            import xgboost as xgb
-            xgb_loaded = False
-
-            # First try to load complete 9-model system
-            gpu_model_paths = [
-                'complete_gpu_models/xgboost_gpu_model.pkl',  # Complete 9-model system
-                'gpu_models/xgboost_gpu_model.pkl',  # Newest GPU-accelerated model
-                'ultimate_models/ultimate_xgboost_model_20250925_230650.pkl',  # Original ultimate model
-                'ultimate_xgboost_model.pkl'
-            ]
-
-            for model_path in gpu_model_paths:
-                try:
-                    model = joblib.load(model_path)
-                    models['ultimate_xgboost'] = model
-                    logger.info(f"✅ Loaded GPU-accelerated XGBoost model successfully from {model_path}")
-                    xgb_loaded = True
-                    break
-                except FileNotFoundError:
-                    continue
-                except Exception as e:
-                    logger.warning(f"Error loading Ultimate XGBoost model from {model_path}: {e}")
-
-            # If ultimate model not found, try other XGBoost models
-            if not xgb_loaded:
-                for model_path in ['models/xgboost_model.pkl', 'working_advanced_models/xgboost_model.pkl', 'advanced_models/xgboost_model.pkl', 'xgboost_model.pkl']:
-                    try:
-                        model = joblib.load(model_path)
-                        models['xgboost'] = model
-                        logger.info("✅ Loaded XGBoost model successfully")
-                        xgb_loaded = True
-                        break
-                    except FileNotFoundError:
-                        continue
-                    except Exception as e:
-                        logger.warning(f"Error loading XGBoost model from {model_path}: {e}")
-
-            if not xgb_loaded:
-                logger.warning("XGBoost model not found in any location")
-        except ImportError as e:
-            logger.warning(f"XGBoost not available, skipping XGBoost model: {e}")
-        except Exception as e:
-            logger.error(f"XGBoost Library error: {e}")
-            logger.warning("Skipping XGBoost model due to library issues")
-            scalers['main'] = None
-            logger.warning("No scaler found, using raw features")
-
-        # Load feature columns - try multiple locations including ultimate model features
-        feature_columns_loaded = False
-        for feature_path in ['feature_columns.pkl', 'models/feature_columns.pkl', 'working_advanced_models/feature_columns.pkl', 'advanced_models/feature_columns.pkl', 'ultimate_models/feature_columns_20250925_230650.json']:
-            try:
-                feature_columns = joblib.load(feature_path)
-                logger.info(f"✅ Loaded feature columns from {feature_path}")
-                feature_columns_loaded = True
-                break
-            except Exception as e:
-                logger.debug(f"Could not load feature columns from {feature_path}: {e}")
-                continue
-
-        if not feature_columns_loaded:
-            logger.warning("⚠️ No feature columns file found, using fallback with advanced features")
-            # Define fallback feature columns including advanced features from XGBoost model
-            feature_columns = [
-                'gender_Male', 'gender_Female', 'gender_Other',
-                'age', 'hypertension', 'heart_disease',
-                'ever_married_Yes', 'work_type_Private', 'work_type_Self-employed',
-                'work_type_children', 'work_type_Govt_job', 'work_type_Never_worked',
-                'Residence_type_Urban', 'Residence_type_Rural', 'avg_glucose_level', 'bmi',
-                'smoking_status_never smoked', 'smoking_status_formerly smoked',
-                'smoking_status_smokes', 'age_squared', 'glucose_log', 'bmi_category_normal',
-                'bmi_category_obese', 'bmi_category_overweight', 'bmi_category_severely_obese',
-                'bmi_category_underweight', 'glucose_category_diabetic', 'glucose_category_normal',
-                'glucose_category_prediabetic', 'glucose_category_severe', 'age_bmi_interaction',
-                'age_glucose_interaction', 'bmi_glucose_interaction', 'is_elderly', 'is_obese',
-                'is_diabetic', 'is_prediabetic', 'cardiovascular_risk', 'metabolic_risk', 'total_risk_score'
-            ]
-
-        # No unsupervised models or feature selectors needed for this simple approach
-        unsupervised = {}
-        feature_selector = None
-
-        # Check if we have at least one model loaded
-        if not models:
-            logger.error("❌ No models loaded! Please ensure model files are available.")
-            return False
-
-        logger.info(f"✅ Successfully loaded {len(models)} models: {list(models.keys())}")
-        logger.info("All models loaded successfully!")
-        return True
-
-    except Exception as e:
-        logger.error(f"Error loading models: {str(e)}")
-        return False
 
 def preprocess_data(data):
     """Advanced preprocessing that creates proper features for the models."""
@@ -405,31 +299,88 @@ def preprocess_data(data):
 
 # Removed build_enhanced_features function - not needed for current implementation
 
-@app.route('/index.html')
-def serve_index():
-    """Serve the main HTML file when the app is run directly."""
-    return send_from_directory('.', 'index.html')
-
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint."""
+    real_models = len(models) > 0 and not using_mock_model
+    serving = real_models and METADATA_OK
     return jsonify({
-        'status': 'healthy',
+        'status': 'healthy' if serving else 'degraded',
         'timestamp': datetime.now().isoformat(),
-        'models_loaded': len(models) > 0
+        'models_loaded': real_models,
+        'metadata_loaded': METADATA_OK,
+        'using_mock_model': using_mock_model,
+        'model': MODEL_METADATA.get('model'),
+        'decision_threshold': DECISION_THRESHOLD
     })
+
+# Accepted values per field. Anything outside these silently produced a
+# plausible-looking risk score before: preprocess_data coerces with
+# `get_value(x) or 0`, so None, [] and "abc" all became 0, and an unknown
+# category became an all-zero one-hot the model never saw in training.
+# On a health endpoint that is worse than an error, so this rejects instead.
+NUMERIC_RANGES = {
+    'age': (1, 100),
+    'avg_glucose_level': (50, 300),
+    'bmi': (10, 50),
+}
+
+CATEGORICAL_VALUES = {
+    'gender': {'male', 'female', 'other'},
+    'ever_married': {'yes', 'no', '0', '1'},
+    'hypertension': {'yes', 'no', '0', '1', 'true', 'false'},
+    'heart_disease': {'yes', 'no', '0', '1', 'true', 'false'},
+    'work_type': {'private', 'self-employed', 'children', 'govt_job', 'never_worked'},
+    'residence_type': {'urban', 'rural'},
+    'smoking_status': {'never smoked', 'formerly smoked', 'smokes', 'unknown'},
+}
+
+
+def validate_payload(data):
+    """Return an error string, or None when the payload is usable."""
+    for field, (low, high) in NUMERIC_RANGES.items():
+        raw = data.get(field)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+            return f"'{field}' must be a number, got {type(raw).__name__}"
+        try:
+            value = float(raw)
+        except (TypeError, ValueError):
+            return f"'{field}' must be a number, got {raw!r}"
+        if value != value or value in (float('inf'), float('-inf')):
+            return f"'{field}' must be a finite number"
+        if not low <= value <= high:
+            return f"'{field}' must be between {low} and {high}, got {value:g}"
+
+    for field, allowed in CATEGORICAL_VALUES.items():
+        raw = data.get(field)
+        if raw is None:
+            continue  # presence is enforced by the required-field check
+        if str(raw).strip().lower() not in allowed:
+            return f"'{field}' must be one of {sorted(allowed)}, got {raw!r}"
+
+    return None
+
 
 @app.route('/api/predict', methods=['POST'])
 def predict_stroke_risk():
     """Predict stroke risk using advanced AI models with self-learning."""
     try:
+        if not METADATA_OK:
+            return jsonify({
+                'error': 'Model metadata unavailable; predictions are disabled '
+                         'because the decision threshold is unknown.'
+            }), 503
+
         # Check if models are loaded
         if not models:
             logger.error("No models loaded. Please ensure model files are available.")
             return jsonify({'error': 'No models loaded. Please ensure model files are available.'}), 500
 
-        # Get input data
-        data = request.json
+        # request.json raises on malformed bodies, which the generic handler
+        # below turned into a 500. A bad body is a client error.
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({'error': 'Request body must be a JSON object'}), 400
 
         # Validate required fields
         required_fields = ['age', 'gender', 'hypertension', 'heart_disease',
@@ -438,6 +389,10 @@ def predict_stroke_risk():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        validation_error = validate_payload(data)
+        if validation_error:
+            return jsonify({'error': validation_error}), 400
 
         # Preprocess data to match the 20 features models expect
         processed = preprocess_data(data)
@@ -466,17 +421,13 @@ def predict_stroke_risk():
                 logger.warning(f"Error with model {name}: {str(e)}")
                 continue
 
-        # Self-learning removed as per user request
-        pass
-        # Use ultimate XGBoost model as primary prediction (95%+ accuracy)
-        if 'ultimate_xgboost' in models:
-            primary_model = 'ultimate_xgboost'
-        elif 'ensemble' in models:
-            primary_model = 'ensemble'
-        elif 'main' in models:
-            primary_model = 'main'
-        else:
-            primary_model = list(models.keys())[0] if models else None
+        # load_models() loads exactly one model, under the key 'main'. This
+        # used to prefer an 'ultimate_xgboost' key annotated "95%+ accuracy";
+        # no such model has ever existed in this repository, and the 95% was
+        # the always-predict-no baseline for a 4.87% positive class.
+        primary_model = 'main' if 'main' in models else (
+            next(iter(models), None)
+        )
 
         if primary_model is None:
             logger.error("No valid primary model found")
@@ -487,40 +438,49 @@ def predict_stroke_risk():
         # Calculate risk category with realistic medical thresholds
         risk_percentage = primary_probability * 100
 
-        # More sensitive risk categorization for medical predictions
-        if risk_percentage < 5:
+        # Probabilities are calibrated, so risk_percentage is a real estimated
+        # probability and tops out well below 100. Two anchors matter and they
+        # must not disagree:
+        #
+        #   the fitted threshold  -> whether the case is flagged
+        #   the population rate   -> how the number reads to a person
+        #
+        # Anchoring the bands purely on base-rate multiples put the threshold
+        # (4.02%) inside the Low band (2.44% to 4.87%), so a case at 4.7% was
+        # labelled "Low Risk" while flagged=True. The Low/Moderate boundary is
+        # therefore the threshold itself: Moderate and above is exactly the set
+        # the model flags. Bands above it are multiples of the population rate.
+        base_rate = MODEL_METADATA.get('positive_rate', 0.0487) * 100
+        risk_multiple = risk_percentage / base_rate if base_rate else 0.0
+        t = DECISION_THRESHOLD * 100
+
+        # sorted() keeps the bands ordered even if a future threshold lands
+        # above 2x the base rate.
+        b1, b2, b3, b4 = sorted([t * 0.5, t, base_rate * 2, base_rate * 4])
+
+        if risk_percentage < b1:
             risk_category = 'Very Low Risk'
             risk_color = '#10B981'
-        elif risk_percentage < 15:
+        elif risk_percentage < b2:
             risk_category = 'Low Risk'
             risk_color = '#34D399'
-        elif risk_percentage < 35:
+        elif risk_percentage < b3:
             risk_category = 'Moderate Risk'
             risk_color = '#F59E0B'
-        elif risk_percentage < 65:
+        elif risk_percentage < b4:
             risk_category = 'High Risk'
             risk_color = '#EF4444'
         else:
             risk_category = 'Very High Risk'
             risk_color = '#DC2626'
 
-        # Confidence based on model agreement and risk level
-        if len(probabilities) > 1:
-            model_agreement = np.std(list(probabilities.values()))
-            if model_agreement < 0.1 and risk_percentage > 30:
-                confidence = 'High'
-            elif model_agreement < 0.2 or risk_percentage > 20:
-                confidence = 'Medium'
-            else:
-                confidence = 'Low'
-        else:
-            # Single model confidence based on risk level
-            if risk_percentage > 50:
-                confidence = 'High'
-            elif risk_percentage > 25:
-                confidence = 'Medium'
-            else:
-                confidence = 'Low'
+        # 'confidence' used to bin by risk magnitude: >50 High, >25 Medium,
+        # else Low. That is not confidence, it is the risk number again under
+        # another name, and once probabilities were calibrated (they top out
+        # near 26%) it returned 'Low' for every single user, implying the
+        # model was unsure about everyone. A single model has no honest
+        # per-prediction confidence without conformal intervals or ensemble
+        # variance, so the field is gone rather than invented.
 
         # Generate health analysis
         health_analysis = generate_health_analysis(data)
@@ -530,19 +490,26 @@ def predict_stroke_risk():
 
         # Prepare response
         response = {
-            'prediction': primary_prediction,
             'probability': primary_probability,
             'risk_percentage': risk_percentage,
             'risk_category': risk_category,
             'risk_color': risk_color,
-            'confidence': confidence,
-            'model_performance': {
-                'accuracy': 0.951,
-                'auc': 0.982,  # Ultimate XGBoost performance
-                'f1_score': 0.951
-            },
-            'all_predictions': predictions,
-            'all_probabilities': probabilities,
+            # model.predict() thresholds at 0.5, which is meaningless on a
+            # 4.87% positive class and is the entire reason a threshold is
+            # fitted. Left as-is, 'prediction' said 0 for people 'flagged'
+            # said were at risk, for every case between 4% and 50%.
+            'prediction': int(primary_probability >= DECISION_THRESHOLD),
+            'flagged': bool(primary_probability >= DECISION_THRESHOLD),
+            'risk_multiple': round(risk_multiple, 1),
+            'population_base_rate': round(base_rate, 2),
+            'calibrated': bool(MODEL_METADATA.get('calibrated', False)),
+            'decision_threshold': DECISION_THRESHOLD,
+            # Measured on a held-out split by ml/train_stroke_model.py, not typed in.
+            'model_performance': MODEL_METADATA.get('metrics_holdout', {}),
+            # 'all_predictions' / 'all_probabilities' are gone. They existed to
+            # report per-model output back when the response claimed nine
+            # models; with one model they were {'main': x}, duplicating
+            # 'probability' exactly.
             'health_analysis': health_analysis,
             'recommendations': recommendations,
             'timestamp': datetime.now().isoformat()
@@ -552,7 +519,7 @@ def predict_stroke_risk():
         
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error', 'detail': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 def generate_health_analysis(data):
     """Generate health analysis based on input data."""

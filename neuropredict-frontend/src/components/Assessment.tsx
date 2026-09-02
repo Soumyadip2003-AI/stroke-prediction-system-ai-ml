@@ -1,362 +1,362 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faUser,
+  faHeartPulse,
+  faBriefcase,
+  faChevronLeft,
+  faChevronRight,
+  faCircleExclamation,
+  faSpinner,
+} from '@fortawesome/free-solid-svg-icons';
 
 interface AssessmentProps {
   onComplete: (data: any) => void;
+  onLoadingChange: (loading: boolean) => void;
 }
 
-const Assessment: React.FC<AssessmentProps> = ({ onComplete }) => {
+// Field names and value strings are frozen. They are the API contract and
+// anything downstream that reads them.
+const STEPS = [
+  { title: 'Personal information', icon: faUser },
+  { title: 'Health metrics', icon: faHeartPulse },
+  { title: 'Lifestyle and environment', icon: faBriefcase },
+];
+
+const Field: React.FC<{ id: string; label: string; hint?: string; children: React.ReactNode }> = ({
+  id,
+  label,
+  hint,
+  children,
+}) => (
+  <div className="flex flex-col gap-2">
+    <label htmlFor={id} className="text-sm font-medium text-fog-300">
+      {label}
+    </label>
+    {children}
+    {hint && (
+      <p id={`${id}-hint`} className="text-xs text-fog-400">
+        {hint}
+      </p>
+    )}
+  </div>
+);
+
+const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const API_BASE = (process.env.REACT_APP_API_BASE as string) || 'https://stroke-prediction-system-ai-ml.onrender.com';
+  const [error, setError] = useState('');
+  const API_BASE =
+    (process.env.REACT_APP_API_BASE as string) ||
+    'https://stroke-prediction-system-ai-ml.onrender.com';
 
+  // Defaults must not invent a risk profile. These previously described a
+  // 55-year-old hypertensive smoker with elevated glucose, so anyone who
+  // clicked through without editing was shown "Moderate Risk, flagged" for a
+  // person who does not exist. Clinical flags now default to absent and the
+  // numbers to dataset medians, so risk only rises from what you actually
+  // enter.
   const [formData, setFormData] = useState({
-    age: 55,
-    gender: 'Male',
-    ever_married: 'Yes',
-    hypertension: 'Yes',
+    age: 45,
+    gender: 'Female',
+    ever_married: 'No',
+    hypertension: 'No',
     heart_disease: 'No',
-    avg_glucose_level: 150,
-    bmi: 29,
+    avg_glucose_level: 92,
+    bmi: 28,
     work_type: 'Private',
     residence_type: 'Urban',
-    smoking_status: 'smokes'
+    smoking_status: 'never smoked',
   });
 
-  const nextStep = () => {
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Range checks at the boundary. The inputs carry min/max, but a typed value
+  // can still land outside them, and NaN is possible whenever a field is cleared.
+  const validate = () => {
+    const { age, avg_glucose_level, bmi } = formData;
+    if (!Number.isFinite(age) || age < 1 || age > 100) return 'Enter an age between 1 and 100.';
+    if (!Number.isFinite(avg_glucose_level) || avg_glucose_level < 50 || avg_glucose_level > 300)
+      return 'Enter an average glucose level between 50 and 300 mg/dL.';
+    if (!Number.isFinite(bmi) || bmi < 10 || bmi > 50) return 'Enter a BMI between 10 and 50.';
+    return '';
   };
 
   const handleSubmit = async () => {
-    console.log('Submit button clicked');
-    console.log('Form data:', formData);
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setError('');
     setIsSubmitting(true);
+    onLoadingChange(true);
+
     try {
-      console.log('Making API call to:', `${API_BASE}/api/predict`);
       const response = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
 
-      console.log('Response status:', response.status);
-      if (response.ok) {
-        const result = await response.json();
-        console.log('API response:', result);
-        onComplete(result);
-      } else {
-        console.error('API error, showing error message');
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        alert('Prediction service is temporarily unavailable. Please try again later.');
+      if (!response.ok) {
+        // The API validates ranges and categories and returns 400 with a
+        // specific reason. Showing "service unavailable" for that would be
+        // both wrong and unactionable, so surface the real message.
+        const body = await response.json().catch(() => null);
+        setError(
+          response.status === 400 && body?.error
+            ? body.error
+            : 'The prediction service is unavailable right now. Please try again in a moment.'
+        );
+        return;
       }
-    } catch (error) {
-      console.error('Prediction error:', error);
-      alert('Network error. Please check your connection and try again.');
+
+      onComplete(await response.json());
+    } catch {
+      setError('Could not reach the prediction service. Check your connection and try again.');
     } finally {
-      // Always reset the submitting state
       setIsSubmitting(false);
+      onLoadingChange(false);
     }
   };
 
+  const step = STEPS[currentStep - 1];
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12 sm:mb-16">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 hover:text-blue-400 transition-colors duration-300 cursor-pointer">
-          AI-Powered Stroke Risk Assessment
-        </h2>
-        <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 leading-relaxed">
-          Enter your health information for an advanced stroke risk analysis using{' '}
-          <span className="text-blue-400 font-semibold hover:text-purple-400 transition-colors duration-300 cursor-pointer">
-            9 Advanced AI Models
-          </span>{' '}
-          with{' '}
-          <span className="text-green-400 font-semibold hover:text-blue-400 transition-colors duration-300 cursor-pointer">
-            95%+ accuracy
-          </span>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-reveal className="mb-10 sm:mb-14">
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">Stroke risk assessment</h2>
+        <p className="mt-4 text-lg text-fog-400 max-w-[58ch]">
+          Ten questions across three short steps. Nothing you enter is stored.
         </p>
       </div>
 
-      <div className="glass-effect rounded-2xl p-6 sm:p-8">
-        {/* Step 1: Personal Information */}
+      <div data-reveal className="surface rounded-card p-6 sm:p-8">
+        <h3 className="text-xl sm:text-2xl font-semibold flex items-center gap-3 mb-8">
+          <FontAwesomeIcon icon={step.icon} className="text-accent" />
+          {step.title}
+        </h3>
+
         {currentStep === 1 && (
-          <div>
-            <h3 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 sm:mb-8 flex items-center">
-              <i className="fas fa-user mr-3 text-blue-400"></i>
-              Personal Information
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-base sm:text-lg font-medium mb-3">
-                  <i className="fas fa-calendar mr-2 text-blue-400"></i>
-                  Age
-                </label>
-                <input
-                  type="number"
-                  value={formData.age}
-                  onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
-                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
-                  min="1"
-                  max="100"
-                />
-              </div>
-              <div>
-                <label className="block text-base sm:text-lg font-medium mb-3">
-                  <i className="fas fa-venus-mars mr-2 text-blue-400"></i>
-                  Gender
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
-                >
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-base sm:text-lg font-medium mb-3">
-                  <i className="fas fa-heart mr-2 text-blue-400"></i>
-                  Marital Status
-                </label>
-                <select
-                  value={formData.ever_married}
-                  onChange={(e) => handleInputChange('ever_married', e.target.value)}
-                  className="w-full px-4 py-4 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-lg min-h-[48px]"
-                >
-                  <option value="No">Never Married</option>
-                  <option value="Yes">Married</option>
-                </select>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Field id="age" label="Age" hint="Between 1 and 100.">
+              <input
+                id="age"
+                name="age"
+                type="number"
+                className="field"
+                min="1"
+                max="100"
+                aria-describedby="age-hint"
+                value={formData.age}
+                onChange={(e) => handleInputChange('age', Number(e.target.value))}
+              />
+            </Field>
+
+            <Field id="gender" label="Gender">
+              <select
+                id="gender"
+                name="gender"
+                className="field"
+                value={formData.gender}
+                onChange={(e) => handleInputChange('gender', e.target.value)}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </Field>
+
+            <Field id="ever_married" label="Marital status">
+              <select
+                id="ever_married"
+                name="ever_married"
+                className="field"
+                value={formData.ever_married}
+                onChange={(e) => handleInputChange('ever_married', e.target.value)}
+              >
+                <option value="No">Never married</option>
+                <option value="Yes">Married</option>
+              </select>
+            </Field>
           </div>
         )}
 
-        {/* Step 2: Health Metrics */}
         {currentStep === 2 && (
-          <div>
-            <h3 className="text-2xl font-semibold mb-6 flex items-center">
-              <i className="fas fa-heartbeat mr-3 text-purple-400"></i>
-              Health Metrics
-            </h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-heartbeat mr-2 text-purple-400"></i>
-                  Hypertension
-                </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="hypertension"
-                      value="No"
-                      checked={formData.hypertension === 'No'}
-                      onChange={(e) => handleInputChange('hypertension', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span>No</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="hypertension"
-                      value="Yes"
-                      checked={formData.hypertension === 'Yes'}
-                      onChange={(e) => handleInputChange('hypertension', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span>Yes</span>
-                  </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {(
+              [
+                ['hypertension', 'Hypertension'],
+                ['heart_disease', 'Heart disease'],
+              ] as Array<[keyof typeof formData, string]>
+            ).map(([name, legend]) => (
+              <fieldset key={name} className="flex flex-col gap-2">
+                <legend className="text-sm font-medium text-fog-300 mb-2">{legend}</legend>
+                <div className="flex gap-3">
+                  {['No', 'Yes'].map((option) => (
+                    <label
+                      key={option}
+                      className={`flex-1 flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-full border cursor-pointer transition-colors duration-200 ${
+                        formData[name] === option
+                          ? 'border-accent bg-accent/15 text-fog-100'
+                          : 'border-white/10 text-fog-400 hover:text-fog-100 hover:border-white/25'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={name}
+                        value={option}
+                        checked={formData[name] === option}
+                        onChange={(e) => handleInputChange(name, e.target.value)}
+                        className="sr-only"
+                      />
+                      {option}
+                    </label>
+                  ))}
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-heart mr-2 text-purple-400"></i>
-                  Heart Disease
-                </label>
-                <div className="flex space-x-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="heart_disease"
-                      value="No"
-                      checked={formData.heart_disease === 'No'}
-                      onChange={(e) => handleInputChange('heart_disease', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span>No</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="heart_disease"
-                      value="Yes"
-                      checked={formData.heart_disease === 'Yes'}
-                      onChange={(e) => handleInputChange('heart_disease', e.target.value)}
-                      className="mr-2"
-                    />
-                    <span>Yes</span>
-                  </label>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-tint mr-2 text-purple-400"></i>
-                  Average Glucose Level (mg/dL)
-                </label>
-                <input
-                  type="number"
-                  value={formData.avg_glucose_level}
-                  onChange={(e) => handleInputChange('avg_glucose_level', parseFloat(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                  min="50"
-                  max="300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-weight mr-2 text-purple-400"></i>
-                  BMI (Body Mass Index)
-                </label>
-                <input
-                  type="number"
-                  value={formData.bmi}
-                  onChange={(e) => handleInputChange('bmi', parseFloat(e.target.value))}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
-                  min="10"
-                  max="50"
-                  step="0.1"
-                />
-              </div>
-            </div>
+              </fieldset>
+            ))}
+
+            <Field
+              id="avg_glucose_level"
+              label="Average glucose level"
+              hint="Milligrams per decilitre, between 50 and 300."
+            >
+              <input
+                id="avg_glucose_level"
+                name="avg_glucose_level"
+                type="number"
+                className="field"
+                min="50"
+                max="300"
+                aria-describedby="avg_glucose_level-hint"
+                value={formData.avg_glucose_level}
+                onChange={(e) => handleInputChange('avg_glucose_level', Number(e.target.value))}
+              />
+            </Field>
+
+            <Field id="bmi" label="Body mass index" hint="Between 10 and 50.">
+              <input
+                id="bmi"
+                name="bmi"
+                type="number"
+                className="field"
+                min="10"
+                max="50"
+                step="0.1"
+                aria-describedby="bmi-hint"
+                value={formData.bmi}
+                onChange={(e) => handleInputChange('bmi', Number(e.target.value))}
+              />
+            </Field>
           </div>
         )}
 
-        {/* Step 3: Lifestyle & Environment */}
         {currentStep === 3 && (
-          <div>
-            <h3 className="text-2xl font-semibold mb-6 flex items-center">
-              <i className="fas fa-briefcase mr-3 text-pink-400"></i>
-              Lifestyle & Environment
-            </h3>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-briefcase mr-2 text-pink-400"></i>
-                  Work Type
-                </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Field id="work_type" label="Work type">
+              <select
+                id="work_type"
+                name="work_type"
+                className="field"
+                value={formData.work_type}
+                onChange={(e) => handleInputChange('work_type', e.target.value)}
+              >
+                <option value="Private">Private</option>
+                <option value="Self-employed">Self-employed</option>
+                <option value="Children">Children</option>
+                <option value="Never_worked">Never worked</option>
+                <option value="Govt_job">Government job</option>
+              </select>
+            </Field>
+
+            <Field id="residence_type" label="Residence type">
+              <select
+                id="residence_type"
+                name="residence_type"
+                className="field"
+                value={formData.residence_type}
+                onChange={(e) => handleInputChange('residence_type', e.target.value)}
+              >
+                <option value="Urban">Urban</option>
+                <option value="Rural">Rural</option>
+              </select>
+            </Field>
+
+            <div className="sm:col-span-2">
+              <Field id="smoking_status" label="Smoking status">
                 <select
-                  value={formData.work_type}
-                  onChange={(e) => handleInputChange('work_type', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
-                >
-                  <option value="Private">Private</option>
-                  <option value="Self-employed">Self-employed</option>
-                  <option value="Children">Children</option>
-                  <option value="Never_worked">Never worked</option>
-                  <option value="Govt_job">Government Job</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-home mr-2 text-pink-400"></i>
-                  Residence Type
-                </label>
-                <select
-                  value={formData.residence_type}
-                  onChange={(e) => handleInputChange('residence_type', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
-                >
-                  <option value="Urban">Urban</option>
-                  <option value="Rural">Rural</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-2">
-                  <i className="fas fa-smoking-ban mr-2 text-pink-400"></i>
-                  Smoking Status
-                </label>
-                <select
+                  id="smoking_status"
+                  name="smoking_status"
+                  className="field"
                   value={formData.smoking_status}
                   onChange={(e) => handleInputChange('smoking_status', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
                 >
-                  <option value="never smoked">Never Smoked</option>
-                  <option value="formerly smoked">Formerly Smoked</option>
-                  <option value="smokes">Currently Smokes</option>
+                  <option value="never smoked">Never smoked</option>
+                  <option value="formerly smoked">Formerly smoked</option>
+                  <option value="smokes">Currently smokes</option>
                   <option value="Unknown">Unknown</option>
                 </select>
-              </div>
+              </Field>
             </div>
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-10 sm:mt-12 space-y-4 sm:space-y-0">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 1 || isSubmitting}
-            className="flex items-center justify-center px-6 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] min-h-[48px] text-lg"
+        {error && (
+          <p
+            role="alert"
+            className="mt-8 flex items-start gap-2.5 text-sm text-[#f8b4c0] bg-[#f8b4c0]/10 border border-[#f8b4c0]/25 rounded-input px-4 py-3"
           >
-            <i className="fas fa-chevron-left mr-2"></i>
-            Previous
+            <FontAwesomeIcon icon={faCircleExclamation} className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between gap-4 mt-10">
+          <button
+            type="button"
+            onClick={() => setCurrentStep((s) => Math.max(1, s - 1))}
+            disabled={currentStep === 1 || isSubmitting}
+            className="btn-quiet rounded-full px-5 py-3 min-h-[48px] flex items-center gap-2 text-sm font-medium"
+          >
+            <FontAwesomeIcon icon={faChevronLeft} />
+            Back
           </button>
-          <div className="flex space-x-3">
-            {[1, 2, 3].map((step) => (
-              <div
-                key={step}
-                className={`w-4 h-4 rounded-full transition-all duration-300 ${
-                  step <= currentStep ? 'bg-blue-500 scale-110' : 'bg-gray-600'
+
+          <ol className="flex gap-2" aria-label={`Step ${currentStep} of 3`}>
+            {[1, 2, 3].map((s) => (
+              <li
+                key={s}
+                aria-current={s === currentStep ? 'step' : undefined}
+                className={`h-1.5 rounded-full transition-all duration-300 ease-out-expo ${
+                  s === currentStep ? 'w-8 bg-accent' : s < currentStep ? 'w-4 bg-accent/50' : 'w-4 bg-white/15'
                 }`}
               />
             ))}
-          </div>
+          </ol>
+
           {currentStep < 3 ? (
             <button
-              onClick={nextStep}
-              disabled={isSubmitting}
-              className="flex items-center justify-center px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px] min-h-[48px] text-lg"
+              type="button"
+              onClick={() => setCurrentStep((s) => Math.min(3, s + 1))}
+              className="btn-primary rounded-full px-6 py-3 min-h-[48px] flex items-center gap-2 text-base font-semibold whitespace-nowrap"
             >
               Next
-              <i className="fas fa-chevron-right ml-2"></i>
+              <FontAwesomeIcon icon={faChevronRight} />
             </button>
           ) : (
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed z-10 relative overflow-hidden group min-w-[200px] min-h-[56px] flex items-center justify-center ${
-                isSubmitting ? 'animate-pulse' : 'hover:animate-bounce'
-              }`}
+              className="btn-primary rounded-full px-6 py-3 min-h-[48px] flex items-center gap-2.5 text-base font-semibold whitespace-nowrap"
             >
-              {/* Button ripple effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
-
-              <div className="relative flex items-center justify-center">
-                <i className={`fas fa-brain mr-3 transition-transform duration-300 ${isSubmitting ? 'animate-spin' : 'group-hover:rotate-12'}`}></i>
-                <span className="relative text-base sm:text-lg">
-                  {isSubmitting ? '🧠 Analyzing with AI...' : '🚀 Get AI Stroke Risk Assessment'}
-                </span>
-                {!isSubmitting && (
-                  <span className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    ✨
-                  </span>
-                )}
-              </div>
+              {isSubmitting && <FontAwesomeIcon icon={faSpinner} spin />}
+              {isSubmitting ? 'Analysing' : 'Get my risk score'}
             </button>
           )}
         </div>
