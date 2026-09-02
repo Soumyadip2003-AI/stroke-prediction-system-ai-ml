@@ -470,9 +470,13 @@ class AdvancedStrokePredictor:
         if self.ensemble_model:
             joblib.dump(self.ensemble_model, f'{filepath_prefix}_ensemble.pkl')
         
-        # Save scaler
-        if hasattr(self, 'scaler'):
-            joblib.dump(self.scaler, f'{filepath_prefix}_scaler.pkl')
+        # Save scaler. This used to read `hasattr(self, 'scaler')`, singular,
+        # while __init__ defines `self.scalers`, plural. The guard was always
+        # False, so the file was silently never written, and model_evaluation.py
+        # then failed with "Could not load models" because it requires it.
+        scaler = self.scalers.get('main') if getattr(self, 'scalers', None) else None
+        if scaler is not None:
+            joblib.dump(scaler, f'{filepath_prefix}_scaler.pkl')
         
         # Save feature columns
         if self.feature_columns is not None:

@@ -8,6 +8,11 @@ including performance metrics, visualizations, and statistical analysis.
 
 import pandas as pd
 import numpy as np
+import matplotlib
+# Batch script: force a non-interactive backend before pyplot is
+# imported. Without a headless backend the show() call below blocks forever
+# on a machine with no display, which is exactly how this script hung.
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import (classification_report, confusion_matrix, roc_auc_score, 
@@ -46,8 +51,15 @@ class ModelEvaluator:
                 except:
                     print(f"⚠️ Could not load {name} model")
             
-            # Load scaler and feature components
-            self.scalers['main'] = joblib.load(f'{model_prefix}_scaler.pkl')
+            # The scaler is optional: advanced_model_training.py trains tree
+            # models that need no scaling and writes no scaler file. Hard
+            # requiring it failed the whole evaluation even though every model,
+            # the feature list, the selector and the results were all present.
+            try:
+                self.scalers['main'] = joblib.load(f'{model_prefix}_scaler.pkl')
+            except FileNotFoundError:
+                print("ℹ️ No scaler saved by the trainer; continuing without one")
+                self.scalers['main'] = None
             self.feature_columns = joblib.load(f'{model_prefix}_features.pkl')
             self.feature_selector = joblib.load(f'{model_prefix}_selector.pkl')
             
@@ -303,7 +315,7 @@ class ModelEvaluator:
         
         plt.tight_layout()
         plt.savefig('advanced_model_performance_dashboard.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close('all')  # was plt.show(), which blocks headless
         
         return model_results
     
@@ -443,7 +455,10 @@ def main():
     X_selected = pd.DataFrame(X_selected, columns=selected_features)
     
     # Scale features
-    X_scaled = evaluator.scalers['main'].transform(X_selected)
+    # The trainer builds tree models that need no scaling and saves no scaler,
+    # so fall through to the unscaled matrix rather than crashing on None.
+    scaler = evaluator.scalers.get('main')
+    X_scaled = scaler.transform(X_selected) if scaler is not None else X_selected
     
     # Create performance dashboard
     model_results = evaluator.create_performance_dashboard(X_scaled, y)

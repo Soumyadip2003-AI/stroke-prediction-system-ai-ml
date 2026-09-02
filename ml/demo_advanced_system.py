@@ -8,6 +8,11 @@ and shows the improvements over the basic model.
 
 import pandas as pd
 import numpy as np
+import matplotlib
+# Batch script: force a non-interactive backend before pyplot is
+# imported. Without a headless backend the show() call below blocks forever
+# on a machine with no display, which is exactly how this script hung.
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import classification_report, roc_auc_score, accuracy_score
@@ -162,7 +167,7 @@ def create_performance_comparison():
     
     plt.tight_layout()
     plt.savefig('model_performance_comparison.png', dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.close('all')  # was plt.show(), which blocks headless
     
     print("📊 Performance comparison chart saved as 'model_performance_comparison.png'")
 
