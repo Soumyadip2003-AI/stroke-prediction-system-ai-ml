@@ -356,17 +356,13 @@ def predict_stroke_risk():
                 logger.warning(f"Error with model {name}: {str(e)}")
                 continue
 
-        # Self-learning removed as per user request
-        pass
-        # Use ultimate XGBoost model as primary prediction (95%+ accuracy)
-        if 'ultimate_xgboost' in models:
-            primary_model = 'ultimate_xgboost'
-        elif 'ensemble' in models:
-            primary_model = 'ensemble'
-        elif 'main' in models:
-            primary_model = 'main'
-        else:
-            primary_model = list(models.keys())[0] if models else None
+        # load_models() loads exactly one model, under the key 'main'. This
+        # used to prefer an 'ultimate_xgboost' key annotated "95%+ accuracy";
+        # no such model has ever existed in this repository, and the 95% was
+        # the always-predict-no baseline for a 4.87% positive class.
+        primary_model = 'main' if 'main' in models else (
+            next(iter(models), None)
+        )
 
         if primary_model is None:
             logger.error("No valid primary model found")

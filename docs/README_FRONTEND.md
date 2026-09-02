@@ -12,7 +12,7 @@ NeuroPredict is a **stunning, modern web application** for advanced stroke risk 
 - **React-based Frontend** with Tailwind CSS
 - **Beautiful Animations** and Interactive Elements
 - **Flask Backend API** with Advanced ML Models
-- **Real-time Predictions** with 95%+ Accuracy
+- **Real-time Predictions**, ROC-AUC 0.85 on a held-out split (see README.md for measured metrics)
 - **Responsive Design** for All Devices
 
 ## ✨ Key Features

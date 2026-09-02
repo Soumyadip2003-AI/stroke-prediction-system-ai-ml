@@ -10,7 +10,7 @@ This script trains all 8 ensemble models to create a comprehensive stroke predic
 5. MLP Classifier (Neural Network)
 6. AdaBoost
 7. XGBoost
-8. Ultimate XGBoost (already trained)
+8. Ultimate XGBoost (NOT trained: no such artifact has ever existed in this repo)
 
 Features:
 - Advanced preprocessing and feature engineering

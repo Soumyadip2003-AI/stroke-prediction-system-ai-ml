@@ -1,8 +1,13 @@
 """
-Ultimate XGBoost Stroke Predictor - 95%+ Accuracy
+Ultimate XGBoost Stroke Predictor (experimental)
 ===============================================
 
-This script implements the most advanced XGBoost techniques to achieve 95%+ accuracy:
+Experimental XGBoost pipeline. NOTE: the '95%+ accuracy' this script and the
+README once claimed was the always-predict-no baseline for a 4.87% positive
+class. Accuracy is the wrong metric here; judge it on ROC-AUC and recall.
+The served model lives in ml/train_stroke_model.py.
+
+Techniques used:
 - Advanced preprocessing and feature engineering
 - Multi-level SMOTE and data augmentation
 - Advanced hyperparameter optimization with Optuna
@@ -64,7 +69,7 @@ logger = logging.getLogger(__name__)
 
 class UltimateXGBoostPredictor:
     """
-    Ultimate XGBoost Stroke Predictor achieving 95%+ accuracy.
+    Experimental XGBoost pipeline. Not the served model.
     """
 
     def __init__(self, data_path='healthcare-dataset-stroke-data.csv', random_state=42):
@@ -616,10 +621,13 @@ class UltimateXGBoostPredictor:
         model_path = self.output_dir / f'ultimate_xgboost_model_{timestamp}.pkl'
         joblib.dump(self.best_model, model_path)
 
-        # Save all models
-        for name, model_info in self.models.items():
+        # Save all models. self.models maps a name to the estimator itself
+        # (see where it is assigned above), not to a {'model': ...} dict, so
+        # subscripting it raised:
+        #   TypeError: 'CalibratedClassifierCV' object is not subscriptable
+        for name, model in self.models.items():
             model_path = self.output_dir / f'{name}_model_{timestamp}.pkl'
-            joblib.dump(model_info['model'], model_path)
+            joblib.dump(model, model_path)
 
         # Save scaler
         scaler_path = self.output_dir / f'scaler_{timestamp}.pkl'
@@ -643,7 +651,7 @@ class UltimateXGBoostPredictor:
             'random_state': self.random_state,
             'feature_count': len(self.feature_columns),
             'dataset_shape': f"Original: {pd.read_csv(self.data_path).shape}",
-            'description': 'Advanced XGBoost model achieving 95%+ accuracy with ensemble stacking'
+            'description': 'Experimental XGBoost pipeline. Judge it on roc_auc and recall in performance_results; accuracy is meaningless on a 4.87% positive class.'
         }
 
         metadata_path = self.output_dir / f'model_metadata_{timestamp}.json'
@@ -711,13 +719,22 @@ class UltimateXGBoostPredictor:
             logger.info(f"  F1 Score:  {metrics['f1']:.4f}")
             logger.info(f"  ROC AUC:   {metrics['roc_auc']:.4f}")
 
-        # Check if we achieved 95%+ accuracy
-        best_accuracy = max([metrics['accuracy'] for metrics in evaluation_results.values()])
+        # Accuracy is the wrong bar on a 4.87% positive class: answering "no"
+        # to everyone scores 95.13%. Reported here only for continuity.
+        best_accuracy = max(m['accuracy'] for m in evaluation_results.values())
+        best_auc = max(m['roc_auc'] for m in evaluation_results.values())
+        best_recall = max(m['recall'] for m in evaluation_results.values())
 
-        if best_accuracy >= 0.95:
-            logger.info(f"\n🎉 SUCCESS! Achieved {best_accuracy:.4f} accuracy (95%+ target met!)")
+        # This used to print "SUCCESS! 95%+ target met" whenever accuracy
+        # cleared 0.95, which a model that predicts "no stroke" for everybody
+        # does by definition. Gate on ranking and recall instead.
+        logger.info(f"\nBest ROC-AUC:  {best_auc:.4f}  (0.50 is a coin flip)")
+        logger.info(f"Best recall:   {best_recall:.4f}  (share of strokes caught)")
+        logger.info(f"Best accuracy: {best_accuracy:.4f}  (always-no baseline is 0.9513)")
+        if best_auc >= 0.80 and best_recall >= 0.50:
+            logger.info("Usable: the model ranks and catches strokes.")
         else:
-            logger.info(f"\n⚠️  Target not met. Best accuracy: {best_accuracy:.4f}")
+            logger.info("NOT usable: check ROC-AUC and recall, not accuracy.")
 
         return evaluation_results
 
