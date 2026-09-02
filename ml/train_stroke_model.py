@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT))
 
 import joblib
 import numpy as np
+from sklearn.base import clone
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
@@ -86,48 +87,35 @@ def main():
         X, y, test_size=0.2, stratify=y, random_state=SEED
     )
 
-    # One model ships, not an ensemble. A grid over 41 configurations found a
-    # heavily regularised forest at ROC-AUC 0.8425, against 0.8429 for a
-    # three-model soft-voting ensemble. That 0.0004 gap is far inside the
-    # +/- 0.019 fold spread, so the second and third model buy nothing and
-    # cost three times the inference and three times the failure surface.
+    # Selection is on ROC-AUC *and* clinical responsiveness, because AUC alone
+    # picks the wrong model here. Age is so dominant on this dataset that an
+    # age-only model scores 0.8261 while all 21 features score 0.8197. A search
+    # optimising AUC therefore rewards a heavily regularised tree that never
+    # splits on the rare binary flags: the previous winner moved its prediction
+    # by -0.02 points for hypertension and +0.04 for heart disease, despite
+    # heart disease tripling the stroke rate within the same age band
+    # (5.79% -> 17.65% for ages 50-70).
     #
-    # min_samples_leaf=100 looks aggressive for 249 positives, but the CV curve
-    # is flat from 60 to 130 (0.8423 to 0.8425), so the choice is not delicate.
-    # Looser forests measurably overfit: min_samples_leaf=8 scored 0.8359.
-    # Every candidate is wrapped in sigmoid calibration. Balanced class weights
-    # deliberately distort probabilities to force the model to take a 4.87%
-    # positive class seriously; excellent for ranking, wrong for display. The
-    # uncalibrated model told people scoring 0.80+ that their risk was 80% when
-    # the real rate in that group was 20.6%. Calibration cuts the mean gap
-    # between the number shown and reality from 0.3693 to 0.0104, improves the
-    # Brier score from 0.1503 to 0.0424, and does not cost AUC.
+    # Logistic regression is linear, so every feature contributes in proportion
+    # to its coefficient and none can be silently dropped. It costs 0.0043 AUC
+    # against the tree, well inside the +/- 0.019 fold spread, and responds
+    # +1.69 and +1.00 points to those two flags instead of nothing.
     def calibrated(estimator):
         return CalibratedClassifierCV(estimator, method="sigmoid", cv=5)
 
     candidates = {
-        "random_forest": calibrated(RandomForestClassifier(
-            n_estimators=800,
-            min_samples_leaf=100,
-            max_features=0.5,
-            class_weight="balanced_subsample",
-            random_state=SEED,
-            n_jobs=-1,
-        )),
-        # Kept as comparators so the selection below stays a measurement
-        # rather than an assertion.
         "logistic_regression": calibrated(make_pipeline(
             StandardScaler(),
             LogisticRegression(C=0.05, class_weight="balanced", max_iter=3000, random_state=SEED),
         )),
+        # Comparators, kept so selection stays a measurement.
+        "random_forest": calibrated(RandomForestClassifier(
+            n_estimators=600, min_samples_leaf=20, max_features=0.5,
+            class_weight="balanced_subsample", random_state=SEED, n_jobs=-1,
+        )),
         "hist_gradient_boosting": calibrated(HistGradientBoostingClassifier(
-            max_iter=300,
-            learning_rate=0.02,
-            max_leaf_nodes=7,
-            min_samples_leaf=80,
-            l2_regularization=3.0,
-            class_weight="balanced",
-            random_state=SEED,
+            max_iter=300, learning_rate=0.02, max_leaf_nodes=7, min_samples_leaf=80,
+            l2_regularization=3.0, class_weight="balanced", random_state=SEED,
         )),
     }
 
@@ -139,7 +127,52 @@ def main():
         scored[name] = (roc_auc_score(y_train, oof), oof)
         print(f"  {name:24s} AUC {scored[name][0]:.4f}")
 
-    best_name = max(scored, key=lambda k: scored[k][0])
+    # A model that ignores hypertension and heart disease is not usable here,
+    # whatever its AUC. Rank only among candidates that respond to both.
+    def responds_to_clinical_flags(model):
+        probe = dict(age=55, gender="Male", ever_married="Yes", hypertension="No",
+                     heart_disease="No", avg_glucose_level=100, bmi=25,
+                     work_type="Private", residence_type="Urban",
+                     smoking_status="never smoked")
+        fitted = clone(model).fit(X_train, y_train)
+
+        def p(payload):
+            row = server.preprocess_data(payload)
+            return fitted.predict_proba(row.values if hasattr(row, "values") else row)[0][1]
+
+        baseline = p(probe)
+        # Relative, not absolute: what matters is whether setting the flag
+        # moves the estimate in proportion to the risk it carries, and the
+        # baseline itself varies by model.
+        htn = p({**probe, "hypertension": "Yes"}) / baseline - 1
+        heart = p({**probe, "heart_disease": "Yes"}) / baseline - 1
+        return htn, heart
+
+    usable = {}
+    for name in scored:
+        htn, heart = responds_to_clinical_flags(candidates[name])
+        # A floor, deliberately well below the real effect. Within ages 50-70
+        # this dataset shows hypertension raising the stroke rate 5.95% ->
+        # 10.88% (+83%) and heart disease 5.79% -> 17.65% (+205%). The chosen
+        # model responds roughly +56% and +33%, so it still understates heart
+        # disease: that flag is only 5.4% of rows and correlates with age, so
+        # a linear fit hands much of its effect to age. Requiring the full
+        # +205% would mean overfitting 276 cases.
+        #
+        # 20% is therefore not a target, it is the line below which a model is
+        # ignoring the factor rather than underweighting it. It rejects the
+        # gradient-boosted tree (+6.8% for heart disease) and the random forest
+        # (+14.1%), both of which were effectively age-only models.
+        ok = htn >= 0.20 and heart >= 0.20
+        print(f"  {name:24s} hypertension {htn*100:+6.1f}%  heart disease {heart*100:+6.1f}%"
+              f"  {'usable' if ok else 'REJECTED: barely responds to clinical risk factors'}")
+        if ok:
+            usable[name] = scored[name][0]
+
+    if not usable:
+        raise RuntimeError("No candidate responds to hypertension and heart disease.")
+
+    best_name = max(usable, key=lambda k: usable[k])
     best_model = candidates[best_name]
     oof = scored[best_name][1]
     print(f"\nselected: {best_name}")

@@ -10,7 +10,7 @@ const Insights: React.FC = () => (
     <div data-reveal className="mb-10 sm:mb-14">
       <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">How the model works</h2>
       <p className="mt-4 text-lg text-fog-400 max-w-[58ch]">
-        A single gradient-boosted model scores 21 features derived from your ten answers, tuned to
+        A single calibrated model weighs 21 features derived from your ten answers, tuned to
         catch strokes rather than to look accurate.
       </p>
     </div>
@@ -31,11 +31,11 @@ const Insights: React.FC = () => (
           <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4">
             <div>
               <dt className="text-xs text-fog-400">ROC-AUC</dt>
-              <dd className="text-2xl font-bold text-accent">0.85</dd>
+              <dd className="text-2xl font-bold text-accent">0.84</dd>
             </div>
             <div>
               <dt className="text-xs text-fog-400">Strokes caught</dt>
-              <dd className="text-2xl font-bold text-accent">82%</dd>
+              <dd className="text-2xl font-bold text-accent">84%</dd>
             </div>
             <div>
               <dt className="text-xs text-fog-400">Features</dt>
@@ -62,7 +62,7 @@ const Insights: React.FC = () => (
       <div className="surface surface-interactive rounded-card p-7">
         <h3 className="text-lg font-semibold">What a flag costs</h3>
         <p className="mt-2.5 text-fog-400 leading-relaxed">
-          Catching 82% of strokes means flagging people who will not have one. Roughly 1 in 7
+          Catching 84% of strokes means flagging people who will not have one. Roughly 1 in 8
           flagged cases is a real stroke.
         </p>
       </div>

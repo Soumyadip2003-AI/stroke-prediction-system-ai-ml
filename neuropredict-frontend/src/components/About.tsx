@@ -7,7 +7,7 @@ const About: React.FC = () => (
     <div data-reveal>
       <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">About NeuroPredict</h2>
       <p className="mt-6 text-lg text-fog-300 leading-relaxed max-w-[65ch]">
-        NeuroPredict is an AI-powered stroke risk assessment built on a gradient-boosted model
+        NeuroPredict is an AI-powered stroke risk assessment built on a calibrated logistic model
         trained on a public stroke dataset of 5,110 records. It exists to make the factors behind stroke risk
         legible, not to replace a clinician.
       </p>

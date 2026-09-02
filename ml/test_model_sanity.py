@@ -52,6 +52,21 @@ def main():
     # operating point actually flags cases.
     assert abs(meta["threshold"] - 0.5) > 1e-9, "threshold left at the untouched 0.5 default"
 
+    # A model can post a fine ROC-AUC on this dataset while being an age
+    # lookup: age alone scores 0.8261 against 0.8197 for all 21 features. The
+    # model that shipped before this check moved +0.04 points for heart
+    # disease, which triples the stroke rate within an age band. Guard the
+    # clinical factors explicitly, or AUC will happily hide their absence.
+    probe = dict(age=55, gender="Male", ever_married="Yes", hypertension="No",
+                 heart_disease="No", avg_glucose_level=100, bmi=25,
+                 work_type="Private", residence_type="Urban",
+                 smoking_status="never smoked")
+    base = score(probe)
+    for flag in ("hypertension", "heart_disease"):
+        lift = score({**probe, flag: "Yes"}) / base - 1
+        assert lift >= 0.20, f"{flag} only moves the estimate {lift*100:+.1f}%: model ignores it"
+        print(f"OK  {flag:14s} lifts risk {lift*100:+.0f}%")
+
     low, high = score(LOW), score(HIGH)
     assert high > low, f"high-risk profile ({high:.3f}) must outscore low-risk ({low:.3f})"
     assert high - low > 0.20, f"spread {high - low:.3f} too flat to be discriminating"
