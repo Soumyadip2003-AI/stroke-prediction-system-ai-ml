@@ -57,6 +57,18 @@ def _load_model_metadata():
         return {}
 
 MODEL_METADATA = _load_model_metadata()
+
+# model_metadata.json is required, not optional: it carries the fitted decision
+# threshold and the population rate that risk_category and flagged are derived
+# from. Without it the threshold silently fell back to 0.5, which on calibrated
+# probabilities that top out near 50% under-flags genuinely high-risk cases
+# while /api/health still reported "healthy". Predictions are refused instead.
+METADATA_OK = bool(MODEL_METADATA.get('threshold') and MODEL_METADATA.get('features'))
+if not METADATA_OK:
+    logger.error(
+        "model_metadata.json missing or incomplete. Predictions are disabled: "
+        "risk categories and flagging would be wrong. Run `npm run train:model`."
+    )
 # 0.5 is the wrong default on a 4.9% positive class; the trained threshold
 # is far lower. Fall back to it only if the metadata file is missing.
 DECISION_THRESHOLD = float(MODEL_METADATA.get('threshold', 0.5))
@@ -291,10 +303,12 @@ def preprocess_data(data):
 def health_check():
     """Health check endpoint."""
     real_models = len(models) > 0 and not using_mock_model
+    serving = real_models and METADATA_OK
     return jsonify({
-        'status': 'healthy' if real_models else 'degraded',
+        'status': 'healthy' if serving else 'degraded',
         'timestamp': datetime.now().isoformat(),
         'models_loaded': real_models,
+        'metadata_loaded': METADATA_OK,
         'using_mock_model': using_mock_model,
         'model': MODEL_METADATA.get('model'),
         'decision_threshold': DECISION_THRESHOLD
@@ -351,6 +365,12 @@ def validate_payload(data):
 def predict_stroke_risk():
     """Predict stroke risk using advanced AI models with self-learning."""
     try:
+        if not METADATA_OK:
+            return jsonify({
+                'error': 'Model metadata unavailable; predictions are disabled '
+                         'because the decision threshold is unknown.'
+            }), 503
+
         # Check if models are loaded
         if not models:
             logger.error("No models loaded. Please ensure model files are available.")

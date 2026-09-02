@@ -1,6 +1,11 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleCheck, faDownload, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCircleCheck,
+  faDownload,
+  faRotateLeft,
+  faTriangleExclamation,
+} from '@fortawesome/free-solid-svg-icons';
 
 interface ResultsProps {
   data: any;
@@ -51,6 +56,8 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const analysis: any[] = Array.isArray(data?.health_analysis) ? data.health_analysis : [];
 
   const recommendations =
     data?.recommendations?.length > 0
@@ -122,6 +129,37 @@ const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
           </button>
         </div>
       </div>
+
+      {/* The API already computes which factors drove the score. It was being
+          sent and dropped, leaving the user a bare percentage with no
+          explanation of where it came from. */}
+      {analysis.length > 0 && (
+        <div data-reveal className="mt-16">
+          <h3 className="text-xl font-semibold">What is driving your score</h3>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            {analysis.map((item: any, index: number) => {
+              const warning = item?.type === 'warning';
+              return (
+                <li
+                  key={index}
+                  className={`flex items-start gap-3 rounded-card border p-4 ${
+                    warning ? 'border-[#EF4444]/30 bg-[#EF4444]/8' : 'border-accent/25 bg-accent/8'
+                  }`}
+                >
+                  <FontAwesomeIcon
+                    icon={warning ? faTriangleExclamation : faCircleCheck}
+                    className={`mt-0.5 shrink-0 ${warning ? 'text-[#f8b4c0]' : 'text-accent'}`}
+                  />
+                  <div>
+                    <p className="font-medium">{item?.title}</p>
+                    <p className="mt-1 text-sm text-fog-400 leading-relaxed">{item?.description}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       <div data-reveal className="mt-16">
         <h3 className="text-xl font-semibold">What to do next</h3>
