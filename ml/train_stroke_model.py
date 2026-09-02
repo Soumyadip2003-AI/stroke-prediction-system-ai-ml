@@ -208,6 +208,47 @@ def main():
     print(f"  confusion: TN={tn} FP={fp} FN={fn} TP={tp}")
     print(f"  probability range    {proba.min():.4f} to {proba.max():.4f}")
 
+    # A single 80/20 split of 50 positives is a noisy estimate. Report the
+    # spread across 20 splits so the page cannot present one draw as precise.
+    split_aucs, split_recalls = [], []
+    for split_seed in range(20):
+        a_tr, a_te, b_tr, b_te = train_test_split(
+            X, y, test_size=0.2, stratify=y, random_state=split_seed
+        )
+        fitted = clone(best_model).fit(a_tr, b_tr)
+        probs = fitted.predict_proba(a_te)[:, 1]
+        split_aucs.append(roc_auc_score(b_te, probs))
+        split_recalls.append(recall_score(b_te, (probs >= threshold).astype(int), zero_division=0))
+
+    # Overall AUC is dominated by ranking across ages. Within an age band the
+    # model is far weaker, which the headline number hides entirely.
+    oof = cross_val_predict(
+        clone(best_model), X, y, cv=StratifiedKFold(5, shuffle=True, random_state=SEED),
+        method="predict_proba", n_jobs=-1,
+    )[:, 1]
+    subgroups = {}
+    raw = pd.read_csv(DATA)
+    for label, mask in [
+        ("gender=Male", (raw.gender == "Male").to_numpy()),
+        ("gender=Female", (raw.gender == "Female").to_numpy()),
+        ("age_40_60", ((raw.age >= 40) & (raw.age < 60)).to_numpy()),
+        ("age_60_80", ((raw.age >= 60) & (raw.age < 80)).to_numpy()),
+        ("age_80_plus", (raw.age >= 80).to_numpy()),
+    ]:
+        if y[mask].sum() >= 5:
+            subgroups[label] = {
+                "n": int(mask.sum()),
+                "positives": int(y[mask].sum()),
+                "roc_auc": float(roc_auc_score(y[mask], oof[mask])),
+            }
+
+    print("\nstability across 20 splits")
+    print(f"  ROC-AUC  {np.mean(split_aucs):.4f} +/- {np.std(split_aucs):.4f}")
+    print(f"  recall   {np.mean(split_recalls):.4f} +/- {np.std(split_recalls):.4f}")
+    print("\nwithin-subgroup ROC-AUC (the headline number hides this)")
+    for k, v in subgroups.items():
+        print(f"  {k:16s} n={v['n']:5d} pos={v['positives']:3d}  AUC {v['roc_auc']:.4f}")
+
     # Ship a model fitted on everything, with the threshold and metrics measured above.
     best_model.fit(X, y)
     joblib.dump(best_model, MODEL_OUT)
@@ -223,6 +264,13 @@ def main():
                 "positive_rate": float(y.mean()),
                 "metrics_holdout": metrics,
                 "majority_class_accuracy": float(1 - y.mean()),
+                "stability_20_splits": {
+                    "roc_auc_mean": float(np.mean(split_aucs)),
+                    "roc_auc_sd": float(np.std(split_aucs)),
+                    "recall_mean": float(np.mean(split_recalls)),
+                    "recall_sd": float(np.std(split_recalls)),
+                },
+                "subgroup_roc_auc": subgroups,
                 "calibrated": True,
                 "brier_score": float(brier_score_loss(y_test, proba)),
                 "sklearn": __import__("sklearn").__version__,

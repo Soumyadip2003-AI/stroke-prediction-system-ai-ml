@@ -37,6 +37,39 @@
     "specificity": 0.6944444444444444
   },
   "majority_class_accuracy": 0.9512720156555773,
+  "stability_20_splits": {
+    "roc_auc_mean": 0.8417942386831274,
+    "roc_auc_sd": 0.01916697160626766,
+    "recall_mean": 0.868,
+    "recall_sd": 0.04261455150532504
+  },
+  "subgroup_roc_auc": {
+    "gender=Male": {
+      "n": 2115,
+      "positives": 108,
+      "roc_auc": 0.854601487386739
+    },
+    "gender=Female": {
+      "n": 2994,
+      "positives": 141,
+      "roc_auc": 0.8219965048611267
+    },
+    "age_40_60": {
+      "n": 1564,
+      "positives": 60,
+      "roc_auc": 0.6891843971631206
+    },
+    "age_60_80": {
+      "n": 1190,
+      "positives": 141,
+      "roc_auc": 0.6559303355441521
+    },
+    "age_80_plus": {
+      "n": 186,
+      "positives": 40,
+      "roc_auc": 0.5020547945205479
+    }
+  },
   "calibrated": true,
   "brier_score": 0.04082440296760377,
   "sklearn": "1.5.2"

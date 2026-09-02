@@ -44,10 +44,11 @@ const Insights: React.FC = () => (
           </dl>
           <p className="mt-5 text-xs text-fog-400 max-w-[54ch]">
             Held-out 20% split of the public stroke dataset (5,110 records), never seen during
-            training or threshold fitting. Probabilities are calibrated, so the percentage shown is a
-            real estimated risk rather than a score: below 25%, where 98% of people land, it is
-            accurate to within about one point. Above 30% it overstates, as the data barely
-            covers that range. Research figures, not a clinical validation.
+            training or threshold fitting. Across 20 different splits the figure varies
+            0.84 plus or minus 0.02, so read it as a range, not a
+            precise value. Probabilities are calibrated: below 25%, where 98% of people land, the
+            percentage is accurate to within about one point, and above 30% it overstates.
+            Research figures, not a clinical validation.
           </p>
         </div>
       </div>
@@ -73,8 +74,11 @@ const Insights: React.FC = () => (
         <FontAwesomeIcon icon={faTriangleExclamation} className="text-accent text-xl" />
         <h3 className="mt-5 text-lg font-semibold">What this is not</h3>
         <p className="mt-2.5 text-fog-400 leading-relaxed max-w-[52ch]">
-          A screening estimate from ten self-reported answers. It has no access to your history,
-          bloodwork, or imaging, and it cannot diagnose anything.
+          A screening estimate from ten self-reported answers, with no access to your history,
+          bloodwork, or imaging. Most of its accuracy comes from ranking by age: among people of
+          a similar age it is much weaker, 0.66 for ages 60 to 80 and
+          0.50 over 80, where 0.50 is a coin flip. It cannot diagnose
+          anything.
         </p>
       </div>
     </div>
