@@ -4,8 +4,10 @@
 
 ![React Frontend](https://img.shields.io/badge/React-Frontend-blue)
 ![Flask Backend](https://img.shields.io/badge/Flask-Backend-green)
-![Mobile Responsive](https://img.shields.io/badge/Mobile-Responsive-purple)
-![Interactive Animations](https://img.shields.io/badge/Interactive-Animations-orange)
+![Model](https://img.shields.io/badge/ROC--AUC-0.84-brightgreen)
+![Recall](https://img.shields.io/badge/strokes%20caught-84%25-brightgreen)
+
+![NeuroPredict stroke risk assessment](assets/preview.png)
 
 
 ## 🎯 Overview
