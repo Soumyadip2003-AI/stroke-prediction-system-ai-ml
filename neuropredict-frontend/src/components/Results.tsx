@@ -1,149 +1,120 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleCheck, faDownload, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
 
 interface ResultsProps {
   data: any;
   onNewAssessment?: () => void;
 }
 
+const RADIUS = 70;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
 const Results: React.FC<ResultsProps> = ({ data, onNewAssessment }) => {
+  const percentage = Math.min(100, Math.max(0, Math.round(data?.risk_percentage ?? 0)));
+  const colour = data?.risk_color ?? '#667eea';
 
   const handleDownload = () => {
-    console.log('Download button clicked');
-    try {
-      const rows = [
-        ['Generated At', new Date().toISOString()],
-        ['Risk Percentage', `${Math.round(data?.risk_percentage ?? 0)}%`],
-        ['Risk Category', `${data?.risk_category ?? ''}`],
-        ['Confidence', `${data?.confidence ?? ''}`],
-      ];
-      const csvContent = rows.map(r => r.join(',')).join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.setAttribute('download', 'stroke_assessment_result.csv');
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      console.log('Download completed successfully');
-    } catch (e) {
-      console.error('Download failed', e);
-    }
+    const rows = [
+      ['Generated At', new Date().toISOString()],
+      ['Risk Percentage', `${percentage}%`],
+      ['Risk Category', `${data?.risk_category ?? ''}`],
+      ['Confidence', `${data?.confidence ?? ''}`],
+    ];
+    const blob = new Blob([rows.map((r) => r.join(',')).join('\n')], {
+      type: 'text/csv;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.setAttribute('download', 'stroke_assessment_result.csv');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const handleNew = () => {
-    console.log('New Assessment button clicked');
-    console.log('onNewAssessment function:', onNewAssessment);
-    if (onNewAssessment) {
-      console.log('Calling onNewAssessment function');
-      onNewAssessment();
-    } else {
-      console.log('No onNewAssessment function, scrolling manually');
-      const el = document.getElementById('assessment');
-      if (el) {
-        console.log('Found assessment element, scrolling');
-        el.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        console.log('Assessment element not found');
-      }
-      window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 300);
-    }
-  };
+  const recommendations =
+    data?.recommendations?.length > 0
+      ? data.recommendations
+      : [
+          {
+            title: 'General health',
+            description:
+              'Maintain regular physical activity (150 min/week), follow a Mediterranean diet, and get regular health check-ups.',
+          },
+        ];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">AI Stroke Risk Analysis Complete</h2>
-        <p className="text-xl text-gray-300">Your personalized stroke risk assessment using Ultimate XGBoost AI with 95%+ accuracy</p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-reveal className="flex flex-col items-center text-center">
+        <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label={`Estimated stroke risk: ${percentage} percent, ${data?.risk_category ?? 'unclassified'}`}>
+          <circle cx="90" cy="90" r={RADIUS} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="12" />
+          <circle
+            cx="90"
+            cy="90"
+            r={RADIUS}
+            fill="none"
+            stroke={colour}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={CIRCUMFERENCE * (1 - percentage / 100)}
+            transform="rotate(-90 90 90)"
+          />
+          <text x="90" y="84" textAnchor="middle" className="fill-fog-100" style={{ fontSize: 34, fontWeight: 700 }}>
+            {percentage}%
+          </text>
+          <text x="90" y="108" textAnchor="middle" className="fill-fog-400" style={{ fontSize: 13 }}>
+            {data?.risk_category ?? ''}
+          </text>
+        </svg>
 
-        <div className="mt-6 flex items-center justify-center gap-4 z-10 relative">
-          <button type="button" onClick={handleDownload} className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold shadow cursor-pointer transition-all duration-200 hover:scale-105">
+        <h2 className="mt-8 text-3xl sm:text-4xl font-bold tracking-tight">Your risk assessment</h2>
+        <p className="mt-4 text-lg text-fog-400 max-w-[54ch]">
+          An estimate based on the ten answers you gave. It is not a diagnosis.
+          {data?.confidence ? ` Model confidence: ${data.confidence}.` : ''}
+        </p>
+
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="btn-primary rounded-full px-6 py-3 min-h-[48px] flex items-center gap-2.5 font-semibold whitespace-nowrap"
+          >
+            <FontAwesomeIcon icon={faDownload} />
             Download Results
           </button>
-          <button type="button" onClick={handleNew} className="px-5 py-2.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold shadow cursor-pointer transition-all duration-200 hover:scale-105">
-            New Assessment
+          <button
+            type="button"
+            onClick={onNewAssessment}
+            className="btn-quiet rounded-full px-6 py-3 min-h-[48px] flex items-center gap-2.5 font-medium whitespace-nowrap"
+          >
+            <FontAwesomeIcon icon={faRotateLeft} />
+            Start over
           </button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-12">
-        {/* Risk Gauge */}
-        <div className="glass-effect rounded-2xl p-8 text-center">
-          <h3 className="text-2xl font-semibold mb-6">Risk Assessment</h3>
-          <div className="relative w-64 h-64 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-8 border-gray-700"></div>
-            <div
-              className="absolute inset-0 rounded-full border-8 border-blue-500 transform -rotate-90"
-              style={{
-                clipPath: 'circle(50% at 50% 50%)',
-                transform: `rotate(${((data?.risk_percentage ?? 0) / 100) * 180}deg)`,
-                borderColor: data?.risk_color ?? '#EF4444'
-              }}
-            ></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-400">
-                  {Math.round(data?.risk_percentage ?? 0)}%
-                </div>
-                <div className="text-lg text-gray-300">{data?.risk_category ?? ''}</div>
+      <div data-reveal className="mt-16">
+        <h3 className="text-xl font-semibold">What to do next</h3>
+        <ul className="mt-5">
+          {recommendations.map((rec: any, index: number) => (
+            <li
+              key={index}
+              className="flex items-start gap-4 py-5 border-b border-white/8 last:border-b-0"
+            >
+              <FontAwesomeIcon icon={faCircleCheck} className="text-accent mt-1 shrink-0" />
+              <div>
+                <p className="font-semibold">{rec.title || 'Recommendation'}</p>
+                <p className="mt-1 text-fog-400 leading-relaxed max-w-[62ch]">
+                  {rec.description || 'No description available.'}
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Results Details */}
-        <div className="space-y-6">
-          <div className="glass-effect rounded-2xl p-6">
-            <h3 className="text-xl font-semibold mb-4">Model Performance</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">95%+</div>
-                <div className="text-sm text-gray-400">Accuracy</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-400">0.982</div>
-                <div className="text-sm text-gray-400">ROC-AUC</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-400">9 Models</div>
-                <div className="text-sm text-gray-400">Ensemble</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-effect rounded-2xl p-6">
-            <h3 className="text-xl font-semibold mb-4">Personalized Recommendations</h3>
-            <div className="space-y-3">
-              {data?.recommendations && data.recommendations.length > 0 ? (
-                data.recommendations.map((rec: any, index: number) => (
-                  <div key={index} className="flex items-start p-3 bg-blue-900 bg-opacity-30 rounded-lg">
-                    <i className={`${rec.icon || 'fas fa-heart'} text-blue-400 mr-3 mt-1`}></i>
-                    <div>
-                      <div className="font-semibold">{rec.title || 'Recommendation'}</div>
-                      <div className="text-sm text-gray-300">
-                        {rec.description || 'No description available'}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex items-start p-3 bg-blue-900 bg-opacity-30 rounded-lg">
-                  <i className="fas fa-heart text-blue-400 mr-3 mt-1"></i>
-                  <div>
-                    <div className="font-semibold">General Health</div>
-                    <div className="text-sm text-gray-300">
-                      Maintain regular physical activity (150 min/week), follow a Mediterranean diet, and get regular health check-ups.
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-        </div>
+            </li>
+          ))}
+        </ul>
       </div>
-
     </div>
   );
 };

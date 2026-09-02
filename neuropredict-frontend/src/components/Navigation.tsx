@@ -1,118 +1,99 @@
 import React, { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faBrain,
+  faHouse,
+  faClipboardCheck,
+  faChartLine,
+  faCircleInfo,
+  faBars,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
 
 interface NavigationProps {
   currentSection: string;
   onNavigate: (section: string) => void;
 }
 
+// Labels are frozen. Only the markup changed: real anchors instead of
+// scroll-handler buttons, so every section is linkable and keyboard reachable.
+const navItems = [
+  { id: 'home', label: 'Home', icon: faHouse },
+  { id: 'assessment', label: 'Assessment', icon: faClipboardCheck },
+  { id: 'insights', label: 'Insights', icon: faChartLine },
+  { id: 'about', label: 'About', icon: faCircleInfo },
+];
+
 const Navigation: React.FC<NavigationProps> = ({ currentSection, onNavigate }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: 'fas fa-home' },
-    { id: 'assessment', label: 'Assessment', icon: 'fas fa-clipboard-check' },
-    { id: 'insights', label: 'Insights', icon: 'fas fa-chart-line' },
-    { id: 'about', label: 'About', icon: 'fas fa-info-circle' }
-  ];
-
-  const handleMobileMenuToggle = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
   const handleNavClick = (sectionId: string) => {
     onNavigate(sectionId);
-    setIsMobileMenuOpen(false); // Close mobile menu after navigation
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-gray-900/90 backdrop-blur-sm">
+    <nav className="fixed top-0 w-full z-50 bg-ink-900/85 backdrop-blur-md border-b border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-20">
-          <div className="flex items-center space-x-2">
-            <i className="fas fa-brain text-xl sm:text-2xl text-blue-400"></i>
-            <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        <div className="flex justify-between items-center h-16 lg:h-[72px]">
+          <a href="#home" onClick={() => handleNavClick('home')} className="flex items-center gap-2.5">
+            <FontAwesomeIcon icon={faBrain} className="text-xl text-accent" />
+            <span className="text-lg font-bold bg-gradient-to-r from-accent to-accent-deep bg-clip-text text-transparent">
               NeuroPredict
             </span>
-          </div>
+          </a>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-6 lg:space-x-8">
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
-              <button
+              <a
                 key={item.id}
+                href={`#${item.id}`}
                 onClick={() => handleNavClick(item.id)}
-                className={`px-3 py-2 rounded-md text-sm lg:text-base font-medium transition-all duration-300 ${
+                aria-current={currentSection === item.id ? 'true' : undefined}
+                className={`px-3.5 py-2 rounded-full text-sm font-medium transition-colors duration-300 ease-out-expo ${
                   currentSection === item.id
-                    ? 'text-white bg-blue-600/50'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700/30'
+                    ? 'text-fog-100 bg-white/10'
+                    : 'text-fog-400 hover:text-fog-100 hover:bg-white/5'
                 }`}
               >
                 {item.label}
-              </button>
+              </a>
             ))}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={handleMobileMenuToggle}
-              className="mobile-menu-button text-gray-300 hover:text-white p-2 rounded-md transition-all duration-300"
-              aria-label="Toggle mobile menu"
-            >
-              <div className="relative w-6 h-6">
-                <span className={`absolute block w-6 h-0.5 bg-current transition-all duration-300 ${
-                  isMobileMenuOpen ? 'rotate-45 top-3' : 'top-1'
-                }`}></span>
-                <span className={`absolute block w-6 h-0.5 bg-current transition-all duration-300 ${
-                  isMobileMenuOpen ? 'opacity-0' : 'top-3'
-                }`}></span>
-                <span className={`absolute block w-6 h-0.5 bg-current transition-all duration-300 ${
-                  isMobileMenuOpen ? '-rotate-45 top-3' : 'top-5'
-                }`}></span>
-              </div>
-            </button>
+          <button
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+            className="md:hidden text-fog-300 hover:text-fog-100 p-2 -mr-2"
+            aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMobileMenuOpen}
+          >
+            <FontAwesomeIcon icon={isMobileMenuOpen ? faXmark : faBars} className="text-xl" />
+          </button>
+        </div>
+      </div>
+
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-white/5 bg-ink-900/95 backdrop-blur-md">
+          <div className="px-4 py-3">
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                onClick={() => handleNavClick(item.id)}
+                aria-current={currentSection === item.id ? 'true' : undefined}
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-input min-h-[48px] transition-colors duration-300 ${
+                  currentSection === item.id
+                    ? 'text-fog-100 bg-white/10'
+                    : 'text-fog-400 hover:text-fog-100 hover:bg-white/5'
+                }`}
+              >
+                <FontAwesomeIcon icon={item.icon} className="w-4" />
+                <span className="font-medium">{item.label}</span>
+              </a>
+            ))}
           </div>
         </div>
-
-        {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm md:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-              style={{ top: '80px' }}
-            ></div>
-
-            {/* Mobile Menu */}
-            <div className="absolute top-full left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-700 md:hidden">
-              <div className="px-4 py-4 space-y-1">
-                {navItems.map((item, index) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className={`mobile-nav-item w-full text-left px-4 py-4 rounded-lg transition-all duration-300 ${
-                      currentSection === item.id
-                        ? 'text-white bg-blue-600/50'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-700/30'
-                    }`}
-                    style={{
-                      animationDelay: `${index * 50}ms`,
-                      touchAction: 'manipulation',
-                      minHeight: '48px'
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <i className={`${item.icon} text-lg`}></i>
-                      <span className="font-medium">{item.label}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      )}
     </nav>
   );
 };

@@ -1,45 +1,81 @@
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faScaleUnbalanced, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 
-const Insights: React.FC = () => {
-  return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
-        <h2 className="text-4xl font-bold mb-4">AI Model Insights</h2>
-        <p className="text-xl text-gray-300">Understanding how our 9 advanced AI models work together</p>
+// Bento: 4 items, 4 cells, no empty cells. Row 1 is 2+1, row 2 is 1+2.
+// Every figure below is measured by ml/train_stroke_model.py on a held-out
+// split and written to model_metadata.json. Nothing here is asserted by hand.
+const Insights: React.FC = () => (
+  <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div data-reveal className="mb-10 sm:mb-14">
+      <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">How the model works</h2>
+      <p className="mt-4 text-lg text-fog-400 max-w-[58ch]">
+        A single gradient-boosted model scores 21 features derived from your ten answers, tuned to
+        catch strokes rather than to look accurate.
+      </p>
+    </div>
+
+    <div data-reveal className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="md:col-span-2 relative overflow-hidden rounded-card border border-white/9 min-h-[280px] flex flex-col justify-end p-7">
+        {/* Placeholder photography. Swap for a real asset before launch. */}
+        <img
+          src="https://picsum.photos/seed/neuropredict-model-lab/900/600"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover opacity-25"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-ink-900/85 to-ink-900/40" />
+        <div className="relative">
+          <h3 className="text-2xl font-semibold">Measured performance</h3>
+          <dl className="mt-6 flex flex-wrap gap-x-10 gap-y-4">
+            <div>
+              <dt className="text-xs text-fog-400">ROC-AUC</dt>
+              <dd className="text-2xl font-bold text-accent">0.85</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-fog-400">Strokes caught</dt>
+              <dd className="text-2xl font-bold text-accent">82%</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-fog-400">Features</dt>
+              <dd className="text-2xl font-bold text-accent">21</dd>
+            </div>
+          </dl>
+          <p className="mt-5 text-xs text-fog-400 max-w-[54ch]">
+            Held-out 20% split of the public stroke dataset (5,110 records), never seen during
+            training or threshold fitting. Research figures, not a clinical validation.
+          </p>
+        </div>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
-          <div className="text-4xl text-blue-400 mb-4">
-            <i className="fas fa-brain"></i>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">9-Model Ensemble</h3>
-          <p className="text-gray-300">Advanced ensemble system combining 9 different AI models for maximum accuracy.</p>
-        </div>
-        <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
-          <div className="text-4xl text-purple-400 mb-4">
-            <i className="fas fa-chart-line"></i>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Advanced Features</h3>
-          <p className="text-gray-300">40+ engineered features including interactions, risk scores, polynomial transformations, and health indicators.</p>
-        </div>
-        <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
-          <div className="text-4xl text-pink-400 mb-4">
-            <i className="fas fa-shield-alt"></i>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Hyperparameter Tuning</h3>
-          <p className="text-gray-300">Advanced hyperparameter optimization with 50+ trials per model for maximum performance.</p>
-        </div>
-        <div className="glass-effect rounded-2xl p-6 text-center hover:transform hover:scale-105 transition-all duration-300">
-          <div className="text-4xl text-green-400 mb-4">
-            <i className="fas fa-eye"></i>
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Feature Selection</h3>
-          <p className="text-gray-300">Advanced feature selection using multiple techniques.</p>
-        </div>
+      <div className="surface surface-interactive rounded-card p-7">
+        <FontAwesomeIcon icon={faScaleUnbalanced} className="text-accent text-xl" />
+        <h3 className="mt-5 text-lg font-semibold">Why not accuracy</h3>
+        <p className="mt-2.5 text-fog-400 leading-relaxed">
+          Only 4.9% of the dataset had a stroke, so always answering "no" scores 95%. That number
+          measures nothing, so it is not used here.
+        </p>
+      </div>
+
+      <div className="surface surface-interactive rounded-card p-7">
+        <h3 className="text-lg font-semibold">What a flag costs</h3>
+        <p className="mt-2.5 text-fog-400 leading-relaxed">
+          Catching 82% of strokes means flagging people who will not have one. Roughly 1 in 6
+          flagged cases is a real stroke.
+        </p>
+      </div>
+
+      <div className="md:col-span-2 rounded-card p-7 border border-accent/25 bg-gradient-to-br from-accent/18 to-accent-deep/10">
+        <FontAwesomeIcon icon={faTriangleExclamation} className="text-accent text-xl" />
+        <h3 className="mt-5 text-lg font-semibold">What this is not</h3>
+        <p className="mt-2.5 text-fog-400 leading-relaxed max-w-[52ch]">
+          A screening estimate from ten self-reported answers. It has no access to your history,
+          bloodwork, or imaging, and it cannot diagnose anything.
+        </p>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default Insights;

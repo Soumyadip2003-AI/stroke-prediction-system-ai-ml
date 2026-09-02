@@ -1,211 +1,147 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBrain, faRobot, faMagicWandSparkles } from '@fortawesome/free-solid-svg-icons';
+import React, { useEffect, useRef } from 'react';
 
-interface HeroProps {
-  onStartAssessment: () => void;
-}
+// Neuron positions in the SVG's 200x200 coordinate space. The CSS places the
+// .neuron elements at the same points as percentages, so the two stay in sync.
+const NEURONS: Array<[number, number]> = [
+  [20, 20],
+  [180, 20],
+  [100, 100],
+  [20, 180],
+  [180, 180],
+];
 
-const Hero: React.FC<HeroProps> = ({ onStartAssessment }) => {
-  const networkRef = useRef<HTMLDivElement>(null);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+const Hero: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const linesRef = useRef<Array<SVGLineElement | null>>([]);
 
-  // Enhanced mouse tracking for neural network interactions
+  // Cursor tracking writes straight to the SVG through refs. No React state,
+  // so moving the pointer never re-renders the tree.
   useEffect(() => {
-    // Throttle mouse move events for better performance
-    let animationFrameId: number;
+    const container = containerRef.current;
+    if (!container) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+    const finePointer = window.matchMedia('(pointer: fine)');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (!finePointer.matches || reducedMotion.matches) return;
 
-      animationFrameId = requestAnimationFrame(() => {
-        if (networkRef.current) {
-          const rect = networkRef.current.getBoundingClientRect();
-          setMousePosition({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-          });
-        }
+    let frame = 0;
+
+    const draw = (clientX: number, clientY: number) => {
+      const rect = container.getBoundingClientRect();
+      const x = ((clientX - rect.left) / rect.width) * 200;
+      const y = ((clientY - rect.top) / rect.height) * 200;
+      linesRef.current.forEach((line) => {
+        if (!line) return;
+        line.setAttribute('x1', String(x));
+        line.setAttribute('y1', String(y));
       });
     };
 
-    const handleMouseEnter = () => {
-      setIsHovering(true);
-      // Add a special effect when entering
-      if (networkRef.current) {
-        networkRef.current.style.animation = 'neural-network-pulse 0.5s ease-out';
-      }
+    const handlePointerMove = (event: PointerEvent) => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => draw(event.clientX, event.clientY));
     };
 
-    const handleMouseLeave = () => {
-      setIsHovering(false);
-      // Reset animation when leaving
-      if (networkRef.current) {
-        networkRef.current.style.animation = '';
-      }
-    };
+    const handleEnter = () => container.classList.add('is-tracking');
+    const handleLeave = () => container.classList.remove('is-tracking');
 
-    const handleClick = (e: MouseEvent) => {
-      // Add click ripple effect
-      const ripple = document.createElement('div');
-      ripple.className = 'click-ripple-effect';
-      ripple.style.left = `${e.offsetX}px`;
-      ripple.style.top = `${e.offsetY}px`;
-
-      if (networkRef.current) {
-        networkRef.current.appendChild(ripple);
-        setTimeout(() => {
-          ripple.remove();
-        }, 600);
-      }
-    };
-
-    const network = networkRef.current;
-    if (network) {
-      network.addEventListener('mousemove', handleMouseMove);
-      network.addEventListener('mouseenter', handleMouseEnter);
-      network.addEventListener('mouseleave', handleMouseLeave);
-      network.addEventListener('click', handleClick);
-    }
-
-    // Add keyboard interaction
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        // Trigger a neural network burst effect
-        if (network) {
-          network.style.animation = 'neural-network-burst 0.8s ease-out';
-          setTimeout(() => {
-            network.style.animation = '';
-          }, 800);
-        }
-      }
-    };
-
-    document.addEventListener('keypress', handleKeyPress);
+    container.addEventListener('pointermove', handlePointerMove);
+    container.addEventListener('pointerenter', handleEnter);
+    container.addEventListener('pointerleave', handleLeave);
 
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      if (network) {
-        network.removeEventListener('mousemove', handleMouseMove);
-        network.removeEventListener('mouseenter', handleMouseEnter);
-        network.removeEventListener('mouseleave', handleMouseLeave);
-        network.removeEventListener('click', handleClick);
-      }
-      document.removeEventListener('keypress', handleKeyPress);
+      if (frame) cancelAnimationFrame(frame);
+      container.removeEventListener('pointermove', handlePointerMove);
+      container.removeEventListener('pointerenter', handleEnter);
+      container.removeEventListener('pointerleave', handleLeave);
     };
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-        <div className="space-y-6 sm:space-y-8 lg:space-y-10 text-center lg:text-left">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight">
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-12 lg:gap-16 items-center">
+        <div data-reveal>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.05]">
+            <span className="bg-gradient-to-r from-accent to-accent-deep bg-clip-text text-transparent">
               Advanced AI
             </span>
             <br />
-            <span className="text-white">Stroke Risk Prediction</span>
+            <span className="text-fog-100">Stroke Risk Prediction</span>
           </h1>
-          <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 leading-relaxed max-w-2xl mx-auto lg:mx-0">
-            Experience advanced healthcare AI using 9 powerful machine learning models with advanced feature engineering.
-            Get personalized stroke risk predictions with 95%+ accuracy and intelligent recommendations.
+
+          <p className="mt-6 text-lg sm:text-xl text-fog-400 leading-relaxed max-w-[52ch]">
+            Answer ten questions about your health and get a personalised stroke risk assessment
+            with clear next steps.
           </p>
 
-          {/* AI Indicators */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 mb-6 lg:mb-8">
-            <div className="flex items-center bg-blue-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
-              <FontAwesomeIcon icon={faBrain} className="text-blue-400 mr-2 sm:mr-3 pulse-on-hover text-sm sm:text-base" />
-              <span className="text-blue-400 text-sm sm:text-base font-medium interactive-text">Advanced ML Models</span>
-            </div>
-            <div className="flex items-center bg-green-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
-              <span className="text-green-400 text-sm sm:text-base font-medium interactive-text">High Accuracy</span>
-            </div>
-            <div className="flex items-center bg-purple-900 bg-opacity-50 px-3 sm:px-4 lg:px-5 py-2 sm:py-3 rounded-full interactive-card">
-              <FontAwesomeIcon icon={faMagicWandSparkles} className="text-purple-400 mr-2 sm:mr-3 pulse-on-hover text-sm sm:text-base" />
-              <span className="text-purple-400 text-sm sm:text-base font-medium interactive-text">Intelligent Analysis</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
-              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-blue-400 interactive-text">95%+</div>
-              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">Accuracy</div>
-            </div>
-            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
-              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-purple-400 interactive-text">0.982</div>
-              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">ROC-AUC</div>
-            </div>
-            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
-              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-green-400 interactive-text">9</div>
-              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">AI Models</div>
-            </div>
-            <div className="text-center interactive-card bounce-on-hover p-3 sm:p-4 lg:p-5">
-              <div className="text-xl sm:text-3xl lg:text-4xl font-bold text-pink-400 interactive-text">40+</div>
-              <div className="text-sm sm:text-base lg:text-lg text-gray-400 font-medium">Features</div>
-            </div>
-          </div>
-          <button
-            onClick={onStartAssessment}
-            className="magic-button text-white px-6 sm:px-8 lg:px-10 py-4 sm:py-5 lg:py-6 rounded-full font-semibold transition-all duration-300 transform click-ripple text-base sm:text-lg lg:text-xl w-full sm:w-auto min-w-[220px] min-h-[56px] flex items-center justify-center"
+          <a
+            href="#assessment"
+            className="btn-primary mt-9 inline-flex items-center justify-center rounded-full px-8 py-4 text-lg font-semibold whitespace-nowrap"
           >
-            <FontAwesomeIcon icon={faRobot} className="mr-3 animate-spin hover:animate-none" />
-            <span className="relative z-10">🚀 Start Interactive AI Assessment</span>
-          </button>
+            Start Assessment
+          </a>
         </div>
-        <div className="flex justify-center mt-8 lg:mt-0">
+
+        <div className="flex justify-center lg:justify-end">
           <div
-            ref={networkRef}
+            ref={containerRef}
             id="neural-network-container"
-            className="neural-network-container relative cursor-pointer enhanced-particles w-72 h-72 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[28rem] lg:h-[28rem] xl:w-[32rem] xl:h-[32rem] interactive-card"
-            style={{ touchAction: 'none' }} // Prevent default touch behaviors
+            className="neural-network-container relative w-64 h-64 sm:w-80 sm:h-80 lg:w-[26rem] lg:h-[26rem]"
           >
-            {/* Neural Network Connections */}
-            <svg className="neural-connections absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 200 200">
+            <svg
+              className="absolute inset-0 w-full h-full"
+              viewBox="0 0 200 200"
+              aria-hidden="true"
+              focusable="false"
+            >
               <defs>
                 <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#667eea" stopOpacity="0.3" />
-                  <stop offset="50%" stopColor="#764ba2" stopOpacity="0.6" />
-                  <stop offset="100%" stopColor="#f093fb" stopOpacity="0.3" />
+                  <stop offset="0%" stopColor="#667eea" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#764ba2" stopOpacity="0.7" />
                 </linearGradient>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                  <feMerge>
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
               </defs>
 
-              {/* Dynamic connections based on mouse position */}
-              <line x1="20" y1="20" x2="180" y2="20" stroke="url(#connectionGradient)" strokeWidth="1" opacity="0.4" filter="url(#glow)" />
-              <line x1="20" y1="20" x2="100" y2="100" stroke="url(#connectionGradient)" strokeWidth="1" opacity="0.4" filter="url(#glow)" />
-              <line x1="180" y1="20" x2="100" y2="100" stroke="url(#connectionGradient)" strokeWidth="1" opacity="0.4" filter="url(#glow)" />
-              <line x1="20" y1="180" x2="100" y2="100" stroke="url(#connectionGradient)" strokeWidth="1" opacity="0.4" filter="url(#glow)" />
-              <line x1="180" y1="180" x2="100" y2="100" stroke="url(#connectionGradient)" strokeWidth="1" opacity="0.4" filter="url(#glow)" />
+              {/* Static lattice */}
+              {NEURONS.slice(0, 2)
+                .concat(NEURONS.slice(3))
+                .map(([x, y]) => (
+                  <line
+                    key={`static-${x}-${y}`}
+                    x1={x}
+                    y1={y}
+                    x2="100"
+                    y2="100"
+                    stroke="url(#connectionGradient)"
+                    strokeWidth="1"
+                  />
+                ))}
+              <line x1="20" y1="20" x2="180" y2="20" stroke="url(#connectionGradient)" strokeWidth="1" />
+              <line x1="20" y1="180" x2="180" y2="180" stroke="url(#connectionGradient)" strokeWidth="1" />
 
-              {/* Mouse interaction lines */}
-              {isHovering && (
-                <>
-                  <line x1={mousePosition.x} y1={mousePosition.y} x2="20" y2="20" stroke="#f093fb" strokeWidth="2" opacity="0.8" filter="url(#glow)" />
-                  <line x1={mousePosition.x} y1={mousePosition.y} x2="180" y2="20" stroke="#667eea" strokeWidth="2" opacity="0.8" filter="url(#glow)" />
-                  <line x1={mousePosition.x} y1={mousePosition.y} x2="100" y2="100" stroke="#764ba2" strokeWidth="2" opacity="0.8" filter="url(#glow)" />
-                  <line x1={mousePosition.x} y1={mousePosition.y} x2="20" y2="180" stroke="#f5576c" strokeWidth="2" opacity="0.8" filter="url(#glow)" />
-                  <line x1={mousePosition.x} y1={mousePosition.y} x2="180" y2="180" stroke="#4facfe" strokeWidth="2" opacity="0.8" filter="url(#glow)" />
-                </>
-              )}
+              {/* Cursor-follow links, hidden until the pointer enters */}
+              {NEURONS.map(([x, y], index) => (
+                <line
+                  key={`cursor-${x}-${y}`}
+                  ref={(el) => {
+                    linesRef.current[index] = el;
+                  }}
+                  className="cursor-link"
+                  x1="100"
+                  y1="100"
+                  x2={x}
+                  y2={y}
+                  stroke="#667eea"
+                  strokeWidth="1.5"
+                />
+              ))}
             </svg>
 
-            {/* Interactive Neural Network */}
             <div className="neural-network">
-              <div className="neuron" data-id="1" style={{ '--mouse-x': mousePosition.x, '--mouse-y': mousePosition.y } as any}></div>
-              <div className="neuron" data-id="2" style={{ '--mouse-x': mousePosition.x, '--mouse-y': mousePosition.y } as any}></div>
-              <div className="neuron" data-id="3" style={{ '--mouse-x': mousePosition.x, '--mouse-y': mousePosition.y } as any}></div>
-              <div className="neuron" data-id="4" style={{ '--mouse-x': mousePosition.x, '--mouse-y': mousePosition.y } as any}></div>
-              <div className="neuron" data-id="5" style={{ '--mouse-x': mousePosition.x, '--mouse-y': mousePosition.y } as any}></div>
+              <span className="neuron" />
+              <span className="neuron" />
+              <span className="neuron" />
+              <span className="neuron" />
+              <span className="neuron" />
             </div>
           </div>
         </div>
