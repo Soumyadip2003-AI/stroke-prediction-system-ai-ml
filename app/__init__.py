@@ -1,10 +1,20 @@
 """NeuroPredict backend package.
 
-This file used to hold a full 784-line copy of the Flask app, including its own
-`load_models()` and its own `/api/predict` with hardcoded accuracy figures.
-Because `backend.py` does `from app.server import app`, that copy executed on
-every boot: forty failed model-path lookups and a second load of the model,
-roughly a second of startup time, for an app object nothing ever served.
+The application itself lives in `app.server`. This module only re-exports it.
 
-The live application is `app.server`. Keep this file empty.
+`app` is re-exported here on purpose: Render's start command is
+`gunicorn app:app`, which resolves this package and looks for an attribute
+named `app`. That used to work because this file held a complete 784-line
+copy of the Flask application, which also meant it ran on every boot,
+doing forty failed model-path lookups and loading the model a second time.
+Deleting that copy removed the attribute and broke the deploy with:
+
+    AttributeError: module 'app' has no attribute 'app'
+
+Re-exporting keeps `gunicorn app:app` and `gunicorn backend:app` both
+working, without a second copy of anything.
 """
+
+from app.server import app
+
+__all__ = ["app"]
