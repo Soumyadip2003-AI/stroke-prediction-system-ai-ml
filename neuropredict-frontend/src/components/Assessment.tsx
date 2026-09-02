@@ -75,10 +75,17 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
 
   // Range checks at the boundary. The inputs carry min/max, but a typed value
   // can still land outside them, and NaN is possible whenever a field is cleared.
+  // The three numeric fields hold raw text while the user types, so an empty
+  // box stays empty instead of snapping to 0. They are coerced here and again
+  // when the payload is built.
+  const asNumber = (value: any) => (String(value).trim() === '' ? NaN : Number(value));
+
   const validate = () => {
-    const { age, avg_glucose_level, bmi } = formData;
+    const age = asNumber(formData.age);
+    const glucose = asNumber(formData.avg_glucose_level);
+    const bmi = asNumber(formData.bmi);
     if (!Number.isFinite(age) || age < 1 || age > 100) return 'Enter an age between 1 and 100.';
-    if (!Number.isFinite(avg_glucose_level) || avg_glucose_level < 50 || avg_glucose_level > 300)
+    if (!Number.isFinite(glucose) || glucose < 50 || glucose > 300)
       return 'Enter an average glucose level between 50 and 300 mg/dL.';
     if (!Number.isFinite(bmi) || bmi < 10 || bmi > 50) return 'Enter a BMI between 10 and 50.';
     return '';
@@ -99,7 +106,12 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
       const response = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          age: asNumber(formData.age),
+          avg_glucose_level: asNumber(formData.avg_glucose_level),
+          bmi: asNumber(formData.bmi),
+        }),
       });
 
       if (!response.ok) {
@@ -153,7 +165,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
                 max="100"
                 aria-describedby="age-hint"
                 value={formData.age}
-                onChange={(e) => handleInputChange('age', Number(e.target.value))}
+                onChange={(e) => handleInputChange('age', e.target.value)}
               />
             </Field>
 
@@ -235,7 +247,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
                 max="300"
                 aria-describedby="avg_glucose_level-hint"
                 value={formData.avg_glucose_level}
-                onChange={(e) => handleInputChange('avg_glucose_level', Number(e.target.value))}
+                onChange={(e) => handleInputChange('avg_glucose_level', e.target.value)}
               />
             </Field>
 
@@ -250,7 +262,7 @@ const Assessment: React.FC<AssessmentProps> = ({ onComplete, onLoadingChange }) 
                 step="0.1"
                 aria-describedby="bmi-hint"
                 value={formData.bmi}
-                onChange={(e) => handleInputChange('bmi', Number(e.target.value))}
+                onChange={(e) => handleInputChange('bmi', e.target.value)}
               />
             </Field>
           </div>
