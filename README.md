@@ -10,7 +10,14 @@
 
 ## 🎯 Overview
 
-**NeuroPredict** is a revolutionary **AI-powered stroke risk assessment system** featuring an ultra-interactive React frontend with stunning animations and comprehensive mobile responsiveness. Built with cutting-edge machine learning models and advanced web technologies, it provides accurate stroke risk predictions with an engaging, futuristic user experience.
+**NeuroPredict** is an educational stroke risk screening tool: a React frontend over a
+Flask API serving one calibrated scikit-learn model trained on a public dataset of
+5,110 records.
+
+It answers ten questions with a calibrated probability, the multiple of the population
+average it represents, and the factors driving that number. Held-out ROC-AUC is
+0.84 and it catches 84% of strokes. It is not a clinical device and has not been
+clinically validated.
 
 ## 🧭 Repository management
 
@@ -44,43 +51,37 @@ npm run check
 
 ### ✨ What Makes NeuroPredict Special?
 
-- 🎨 **Ultra-Interactive Animations**: 150+ particles responding to touch/mouse movements
-- 📱 **100% Mobile Responsive**: Perfect experience on phones, tablets, and desktops
-- 🧠 **One Tuned Model**: Histogram gradient boosting over 21 features, ROC-AUC 0.85 on a held-out split
-- ⚡ **Real-time Interactions**: Dynamic neural network visualizations
-- 🎯 **Touch-Optimized**: Full gesture support for mobile devices
-- 🚀 **Performance Optimized**: 60fps animations on all devices
+- 🧠 **One Calibrated Model**: Logistic regression over 21 features, held-out ROC-AUC 0.84
+- 🎯 **Honest Numbers**: The percentage shown is a real probability, accurate to about one point below 25%
+- 🔍 **Explained Results**: Every score comes with the factors that drove it
+- ♿ **Accessible**: Labelled controls, visible focus, `prefers-reduced-motion` honoured throughout
+- 📱 **Responsive**: 320px to 4K, 48px touch targets
+- 🛡️ **Guarded**: `npm run check` fails if the model stops using clinical risk factors
 
 ## ✨ Key Features
 
-### 🎨 Ultra-Interactive Frontend
-- **React with TypeScript**: Modern, type-safe frontend development
-- **Tailwind CSS**: Mobile-first responsive design system
-- **Advanced Animations**: 150+ particles with real-time interactions
-- **Neural Network Visualization**: Dynamic SVG-based neural connections
-- **Touch-Optimized**: Full gesture support for mobile devices
-- **Responsive Design**: Perfect scaling from 320px to 4K displays
+### 🎨 Frontend
+- **React 19 with TypeScript**: Type-safe components
+- **Tailwind CSS**: Mobile-first design tokens, one accent colour, one radius scale
+- **Neural Network Visual**: SVG connections that track the cursor, written through refs so
+  pointer movement never re-renders React
+- **Reduced Motion**: every animation collapses under `prefers-reduced-motion`
+- **Responsive**: 320px to 4K, explicit mobile collapse per section
 
 ### 🤖 The Model
-- **One Model**: Histogram gradient boosting, chosen by cross-validation over 41 tuned configurations
+- **One Model**: Calibrated logistic regression, selected on ROC-AUC *and* clinical responsiveness
 - **Balanced Class Weights**: The dataset is 4.87% positive; without this, "always no" wins
-- **Fitted Decision Threshold**: 0.4796, chosen out-of-fold via Youden's J, not left at 0.5
+- **Fitted Decision Threshold**: 0.0402, chosen out-of-fold via Youden's J, not left at 0.5
 - **21 Features**: Built by the same `preprocess_data` the API serves with, so training and serving cannot drift
-- **ROC-AUC 0.8517, recall 0.82**: Measured on a held-out split, not on training data
+- **ROC-AUC 0.8418, recall 0.84**: Measured on a held-out split, not on training data
+- **Sigmoid calibrated**: the displayed percentage is a probability, not a ranking score
 
-### 📱 Mobile Excellence
-- **100% Mobile Responsive**: Perfect experience on all devices
-- **Touch Interactions**: Multi-zone particle interactions
-- **Mobile Performance**: Optimized for 60fps on mobile hardware
-- **PWA Ready**: Can be installed as a mobile app
-- **Gesture Support**: Swipe, tap, and multi-touch interactions
-
-### ⚡ Interactive Animations
-- **Particle Physics**: Advanced multi-zone interaction system
-- **Neural Network**: Real-time connections responding to mouse/touch
-- **Dynamic Effects**: Color transitions, glows, and ripple animations
-- **Performance Optimized**: Hardware-accelerated animations
-- **Keyboard Interactions**: Spacebar triggers special effects
+### ♿ Accessibility
+- **Labelled controls**: every input has an associated `<label>`; verified by test
+- **Visible focus**: focus rings never removed, borders stay visible on focus
+- **Not colour-alone**: the risk gauge carries an accessible label as well as a colour
+- **Reduced motion**: a single media query collapses every animation and transition
+- **Touch targets**: 48px minimum
 
 ## 🚀 Quick Start
 
@@ -173,11 +174,11 @@ are called out as such, because claiming them was how this project ended up
 advertising a 0.982 ROC-AUC it never had.
 
 ### 🧠 What the served model does
-- **One estimator**: histogram gradient boosting, selected by cross-validation against a
-  tuned random forest and logistic regression
+- **One estimator**: calibrated logistic regression, selected against a tuned random forest
+  and histogram gradient boosting on ROC-AUC *and* clinical responsiveness
 - **Balanced class weights**: the dataset is 4.87% positive, so without this the
   loss-minimising answer is "nobody has a stroke"
-- **Fitted decision threshold**: 0.5308, chosen out-of-fold via Youden's J.
+- **Fitted decision threshold**: 0.0402, chosen out-of-fold via Youden's J.
   Leaving it at 0.5 is what produced the original zero-recall model
 - **Stratified k-fold cross-validation**: model selection and threshold fitting both
   happen out-of-fold; the reported metrics come from a held-out split touched by neither
@@ -200,7 +201,8 @@ Present in the legacy `ml/` scripts, deliberately absent from what ships:
   is the most likely origin of the 0.96+ figures those scripts report
 - **RFE / mutual-information feature selection** - 21 features on 249 positives does not
   need pruning
-- **Isotonic calibration, stacking, GPU training** - no measurable benefit at this size
+- **Isotonic calibration, stacking, GPU training** - sigmoid calibration is used and does
+  help; isotonic was tested and calibrated worse (0.0689 vs 0.0104 mean gap)
 
 ### 🎯 Calibrated probabilities
 The number the API returns is a real estimated probability, not a ranking score.
@@ -214,42 +216,23 @@ fixes it at no cost to ranking:
 
 | | Uncalibrated | Calibrated |
 |---|---|---|
-| Mean gap between shown % and reality | 36.93 pts | **0.83 pts** |
-| Brier score | 0.1503 | **0.0416** |
-| ROC-AUC | 0.8361 | **0.8486** |
+| Mean gap between shown % and reality | 36.93 pts | **0.84 pts** |
+| Brier score | 0.1503 | **0.0408** |
+| ROC-AUC | 0.8361 | **0.8418** |
 
-Because the outputs are honest, they top out near 26% rather than 100%. Risk
-bands are therefore multiples of the population base rate (4.87%),
-which is also what a reader wants: not "24%" alone, but "five times average".
+Because the outputs are honest they top out well below 100%. The Low/Moderate band
+boundary is the fitted threshold itself, so "Moderate Risk or above" is exactly the set
+the model flags; bands above it are multiples of the population base rate (4.87%), which
+is what a reader actually wants: not "24%" alone, but "five times average".
+
+Calibration is accurate to about one point below 25%, where 98% of people land. Above
+30% it overstates, because the data barely covers that range.
 
 ### 📉 The accuracy ceiling
 Every architecture tested lands between 0.83 and 0.85 ROC-AUC. That flatness is an
 information ceiling in the data, not a modelling failure. Age dominates. Moving past it
 requires inputs this dataset does not contain: atrial fibrillation, actual blood-pressure
 readings, prior stroke or TIA, cholesterol, family history.
-
-## 🔬 Advanced Interactive Features
-
-### 🎨 Ultra-Interactive Particle System
-- **Multi-Zone Physics**: 3 interaction zones (close/medium/far proximity)
-- **Touch-Responsive**: Full gesture support for mobile devices
-- **150+ Particles**: Dynamic particle count based on device performance
-- **Real-time Tracking**: Particles follow mouse/finger movements
-- **Advanced Effects**: Grab, bubble, repulse, push, and remove interactions
-
-### 🧠 Dynamic Neural Network Visualization
-- **SVG-Based Graphics**: Scalable vector graphics for crisp visuals
-- **Real-time Connections**: Lines appear dynamically based on mouse position
-- **Touch Interactions**: Neural network responds to touch gestures
-- **Color-Coded Neurons**: Each neuron has unique colors and animations
-- **Performance Optimized**: Hardware-accelerated animations
-
-### 📱 Mobile Excellence
-- **Responsive Design**: Perfect scaling from 320px to 4K displays
-- **Touch Optimization**: Proper touch target sizing (44px minimum)
-- **Performance Scaling**: Adaptive particle counts for mobile devices
-- **Gesture Support**: Swipe, tap, and multi-touch interactions
-- **PWA Ready**: Can be installed as a mobile application
 
 ## 📈 Performance Metrics
 
@@ -260,41 +243,70 @@ training or threshold fitting. Regenerate with `npm run train:model`.
 
 | Metric | Value | Why it is here |
 |--------|-------|----------------|
-| **ROC-AUC** | **0.8486** | The headline number. 0.50 is a coin flip. |
-| **Recall** | **0.82** | Share of real strokes caught. This is what the model is tuned for. |
-| **Precision** | **0.1444** | Roughly 1 flagged case in 7 is a real stroke. |
-| **Average precision** | **0.2744** | Better than accuracy on a 4.9% positive class. |
-| **Specificity** | **0.7500** | Share of non-strokes correctly cleared. |
-| **Accuracy** | **0.7534** | Reported last, deliberately. See below. |
+| **ROC-AUC** | **0.8418** | The headline number. 0.50 is a coin flip. |
+| **Recall** | **0.84** | Share of real strokes caught. This is what the model is tuned for. |
+| **Precision** | **0.1239** | Roughly 1 flagged case in 8 is a real stroke. |
+| **Average precision** | **0.2633** | Better than accuracy on a 4.9% positive class. |
+| **Specificity** | **0.6944** | Share of non-strokes correctly cleared. |
+| **Accuracy** | **0.7016** | Reported last, deliberately. See below. |
 
 **Accuracy is lower than the baseline, and that is the point.** Only 4.87% of the
 dataset had a stroke, so a model that always answers "no stroke" scores
 95.13% accuracy while catching zero of them. An earlier version of
 this project did exactly that: 95.13% accuracy, ROC-AUC 0.5605, recall 0.0000.
 Models here are selected on ROC-AUC with balanced class weights, and the decision
-threshold (0.0666) is fitted out-of-fold rather than left at 0.5.
+threshold (0.0402) is fitted out-of-fold rather than left at 0.5.
 
-**Architecture:** one histogram gradient boosting model over 21 features. A grid of 41
-configurations showed a tuned single model reaches ROC-AUC 0.8425 against 0.8429 for a
-three-model soft-voting ensemble. That 0.0004 gap sits far inside the +/- 0.019 fold
-spread, so extra ensemble members buy nothing measurable while tripling inference cost
-and failure surface. Ensemble size peaks at three and then *declines*: 1 model 0.8392,
-3 models 0.8429, 4 models 0.8410, 6 models 0.8395. The nine-model claim this project
-once made would have been worse than one.
+**Architecture:** one calibrated logistic regression over 21 features. Selection uses
+ROC-AUC *and* clinical responsiveness, because AUC alone picks the wrong model here: age
+is so dominant that an age-only model scores 0.8261 while all 21 features score 0.8197.
+Ranking on AUC therefore rewarded a heavily regularised tree that never split on the rare
+binary flags, moving its estimate +6.8% for heart disease, a factor that triples the
+stroke rate within an age band. Candidates are now rejected below a 20% lift:
 
-### 🎨 Frontend Performance
-- **60 FPS Animations**: Smooth performance on all devices
-- **Mobile Optimized**: 80 particles on mobile vs 150 on desktop
-- **Responsive Design**: Perfect scaling from 320px to 4K displays
-- **Touch Interactions**: 100ms response time for touch events
-- **PWA Ready**: Can be installed as a mobile app
+| candidate | hypertension | heart disease | |
+|---|---|---|---|
+| logistic regression | +59.7% | +24.4% | usable |
+| random forest | +29.2% | +14.1% | rejected |
+| hist gradient boosting | +20.7% | +6.8% | rejected |
 
-### 📱 Mobile Responsiveness
-- **Breakpoints**: Mobile (320px+), Tablet (768px+), Desktop (1024px+)
-- **Touch Targets**: Minimum 44px for accessibility
-- **Performance**: Adaptive particle counts based on device capabilities
-- **Gestures**: Full support for swipe, tap, and multi-touch
-- **Orientation**: Works in both portrait and landscape modes
+Ensembles were tested and dropped: accuracy peaks at three members and then declines
+(1 model 0.8392, 3 models 0.8429, 4 models 0.8410, 6 models 0.8395). A tuned single model
+sits inside the fold spread of the best ensemble, so extra members buy nothing measurable
+while tripling inference cost. The nine-model claim this project once made would have been
+worse than one.
+
+### 📏 How certain are these numbers
+
+One 80/20 split of 50 positives is a noisy estimate. Across 20 splits:
+
+| | mean | spread |
+|---|---|---|
+| ROC-AUC | 0.8418 | +/- 0.0192 |
+| Recall | 0.8680 | +/- 0.0426 |
+
+Read the headline as a range, not a precise value.
+
+### ⚠️ The headline hides within-group weakness
+
+Overall AUC is carried almost entirely by ranking across ages. Within a group:
+
+| subgroup | n | positives | ROC-AUC |
+|---|---|---|---|
+| gender = Male | 2115 | 108 | 0.8546 |
+| gender = Female | 2994 | 141 | 0.8220 |
+| age 40-60 | 1564 | 60 | 0.6892 |
+| age 60-80 | 1190 | 141 | 0.6559 |
+| age 80+ | 186 | 40 | 0.5021 |
+
+Among people over 80 it is a coin flip. Someone aged 75 reading "ROC-AUC 0.84" would
+reasonably assume it distinguishes them from their peers. It barely does.
+
+### 🎨 Frontend
+- **Bundle**: ~91 KB JS + 5 KB CSS, gzipped
+- **API latency**: p50 3.5ms, p95 3.7ms measured locally
+- **No source maps in production**: the build no longer publishes your TypeScript
+- **Reduced motion**: honoured for every animation
 
 ## 🎯 Usage Examples
 
@@ -325,7 +337,8 @@ if response.status_code == 200:
     result = response.json()
     print(f"Stroke Risk: {result['risk_percentage']:.1f}%")
     print(f"Risk Category: {result['risk_category']}")
-    print(f"Confidence: {result['confidence']}")
+    print(f"Times average:  {result['risk_multiple']}x")
+    print(f"Flagged:        {result['flagged']}")
 ```
 
 ### ⚛️ Frontend Integration
@@ -351,55 +364,16 @@ const getStrokePrediction = async (patientData) => {
 
 ## 🔧 Advanced Configuration
 
-### 🎨 Frontend Customization
-Customize the interactive animations and responsive design:
-
-```javascript
-// particles.js configuration in App.tsx
-const particleConfig = {
-  particles: {
-    number: {
-      value: isMobile ? 80 : 150,  // Adaptive particle count
-      density: { enable: true, value_area: isMobile ? 600 : 1000 }
-    },
-    interactivity: {
-      events: {
-        onhover: { enable: true, mode: ['grab', 'bubble', 'repulse'] },
-        onclick: { enable: true, mode: ['push', 'remove', 'bubble'] }
-      }
-    }
-  }
-};
-```
-
 ### 🖥️ Backend Configuration
-Configure the Flask API server:
 
 ```python
-# backend.py configuration
-app.config['DEBUG'] = True
-app.config['HOST'] = '0.0.0.0'
-app.config['PORT'] = 5002
-
-# CORS configuration for frontend access
-CORS(app, origins=['http://localhost:3000'])
+# app/server.py
+CORS(app)                       # any origin; the API is public and stateless
+DECISION_THRESHOLD = 0.0402     # read from model_metadata.json, not hardcoded
 ```
 
-## 📊 Interactive Features Guide
-
-### 🎮 Particle Interactions
-- **Mouse/Finger Tracking**: Particles respond to cursor/touch movement
-- **Multi-Zone Physics**: Different effects at different distances
-- **Touch Gestures**: Tap, swipe, and multi-touch support
-- **Click Effects**: Ripple animations and particle bursts
-- **Keyboard Shortcuts**: Spacebar triggers special effects
-
-### 🧠 Neural Network Interactions
-- **Dynamic Connections**: SVG lines follow cursor position
-- **Hover Effects**: Neurons scale and glow on interaction
-- **Click Animations**: Special burst effects on clicks
-- **Touch-Responsive**: Optimized for mobile touch interactions
-- **Performance Scaling**: Adaptive complexity based on device
+The frontend picks its API with `REACT_APP_API_BASE`, falling back to the deployed
+Render URL when unset, so no environment variable is needed for a normal deploy.
 
 ## 🎨 User Interface Features
 
@@ -415,7 +389,7 @@ CORS(app, origins=['http://localhost:3000'])
 - **Assessment Form**: Multi-step form with validation
 - **Results Display**: Dynamic risk visualization with recommendations
 - **Navigation**: Smooth scrolling navigation between sections
-- **Loading States**: Beautiful loading animations and overlays
+- **Loading States**: a results-shaped skeleton while the prediction runs
 
 ### 📱 Mobile-First Design
 - **Responsive Layouts**: Perfect scaling across all device sizes
@@ -497,10 +471,10 @@ CMD ["npm", "start"]
 
 ### 🏗️ System Architecture
 - **Frontend**: React + TypeScript + Tailwind CSS
-- **Backend**: Flask + Python + XGBoost + Optuna
+- **Backend**: Flask + Python + scikit-learn
 - **Database**: No database required (stateless API)
-- **ML Model**: A single histogram gradient boosting classifier (scikit-learn)
-- **Animations**: CSS3 + SVG + Particles.js
+- **ML Model**: A single calibrated logistic regression (scikit-learn)
+- **Visuals**: CSS transitions + inline SVG, no animation library
 
 ### 📱 Mobile Optimization
 - **Responsive Design**: Mobile-first approach with breakpoints
@@ -519,37 +493,40 @@ CMD ["npm", "start"]
 
 ### 🔧 Backend Dependencies
 ```txt
-Flask==2.3.3
-Flask-CORS==4.0.0
-pandas==2.1.1
-numpy==1.25.2
-scikit-learn==1.3.0
+# requirements.txt - what the API needs to serve
+pandas==2.1.3
+numpy==1.26.2
+scikit-learn==1.5.2
+scipy==1.11.4
 joblib==1.3.2
-xgboost==1.7.6  # Ultimate model primary library
-lightgbm==3.3.5  # Ensemble stacking component
-catboost==1.2     # Ensemble stacking component
-optuna==3.4.0     # Hyperparameter optimization
-imbalanced-learn==0.11.0  # Advanced data balancing
+Flask==3.0.0
+Flask-CORS==4.0.0
+gunicorn==21.2.0
 ```
+
+No xgboost, lightgbm, catboost or optuna: the served model is a scikit-learn estimator
+and needs none of them. Training extras live in `requirements-ml.txt` and are
+deliberately not installed on the server, so a broken training dependency cannot block a
+deploy. That used to happen: a pinned `lightgbm==4.1.0` failed to build and took five
+other packages down with it.
 
 ### ⚛️ Frontend Dependencies
 ```json
 {
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
+  "react": "^19.1.1",
+  "react-dom": "^19.1.1",
   "typescript": "^4.9.5",
-  "tailwindcss": "^3.3.3",
-  "@types/react": "^18.2.15",
-  "@fortawesome/react-fontawesome": "^0.2.0",
-  "particles.js": "^2.0.0"
+  "tailwindcss": "^3.4.17",
+  "@fortawesome/react-fontawesome": "^3.0.2",
+  "web-vitals": "^2.1.4"
 }
 ```
 
-### 🎨 Animation Libraries
-- **Particles.js**: Interactive particle animations
-- **CSS3 Animations**: Hardware-accelerated transitions
-- **SVG Graphics**: Scalable vector neural network
-- **Tailwind CSS**: Utility-first responsive design
+### 🎨 Visual Layer
+- **CSS transitions**: hardware-accelerated, all gated on `prefers-reduced-motion`
+- **Inline SVG**: the neural network visual and the risk gauge
+- **IntersectionObserver**: scroll reveal, never a scroll listener
+- **Tailwind CSS**: design tokens, one accent, one radius scale
 
 ## 🤝 Contributing
 
@@ -588,7 +565,6 @@ We welcome contributions to NeuroPredict! Here's how you can help:
 ### ⚛️ Frontend Development
 - **React Team**: Modern JavaScript framework
 - **Tailwind CSS**: Utility-first CSS framework
-- **Particles.js**: Interactive animation library
 - **TypeScript**: Type-safe JavaScript development
 
 ### 🎨 Design & UX
@@ -623,7 +599,7 @@ We welcome contributions to NeuroPredict! Here's how you can help:
 **This tool is for educational and research purposes only.** The stroke risk predictions provided by NeuroPredict should **NOT** be used as a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.
 
 ### 🔬 Research Use
-This system is intended for **research and educational purposes**. Held-out ROC-AUC is 0.85 with recall 0.82 and precision 0.15, meaning roughly 6 in every 7 flagged cases is a false alarm. It is trained on one public dataset of 5,110 records and has not been clinically validated. Real-world performance will differ.
+This system is intended for **research and educational purposes**. Held-out ROC-AUC is 0.84 with recall 0.84 and precision 0.12, meaning roughly 7 in every 8 flagged cases is a false alarm. Overall accuracy is carried by ranking across ages: within an age band it is much weaker, 0.66 for 60-80 and 0.50 over 80, where 0.50 is chance. It is trained on one public dataset of 5,110 records and has not been clinically validated. Real-world performance will differ.
 
 ### 👥 No Medical Advice
 The predictions and recommendations provided are **not medical advice**. Users should not make health decisions based on this tool's output without consulting healthcare professionals.
