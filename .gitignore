@@ -71,6 +71,7 @@ logs/
 !model_metadata.json
 
 # Node.js (for frontend)
+node_modules/
 neuropredict-frontend/node_modules/
 neuropredict-frontend/.next/
 neuropredict-frontend/out/

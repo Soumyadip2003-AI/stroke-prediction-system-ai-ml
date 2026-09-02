@@ -6,7 +6,7 @@
   "scripts": {
     "setup:python": "python3 -m venv .venv && . .venv/bin/activate && python -m pip install --upgrade pip && pip install -r requirements.txt",
     "setup:frontend": "npm --prefix neuropredict-frontend install --no-audit --no-fund",
-    "setup": "npm run setup:python && npm run setup:frontend",
+    "setup": "npm run setup:root && npm run setup:python && npm run setup:frontend",
     "dev:backend": ". .venv/bin/activate && python backend.py",
     "predev:frontend": "npm --prefix neuropredict-frontend install --no-audit --no-fund",
     "dev:frontend": "npm --prefix neuropredict-frontend start",
@@ -17,7 +17,8 @@
     "test:frontend": "npm --prefix neuropredict-frontend test -- --watch=false",
     "check:model": ". .venv/bin/activate && python ml/test_model_sanity.py",
     "train:model": ". .venv/bin/activate && python ml/train_stroke_model.py",
-    "verify:model": ". .venv/bin/activate && python ml/verify_model.py"
+    "verify:model": ". .venv/bin/activate && python ml/verify_model.py",
+    "setup:root": "npm install --no-audit --no-fund"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
