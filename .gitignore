@@ -129,3 +129,5 @@ healthcare-dataset-stroke-data.augmented.csv
 
 # training telemetry, regenerated on every CatBoost run
 catboost_info/
+.vercel
+.env*

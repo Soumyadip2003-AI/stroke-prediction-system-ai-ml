@@ -1,0 +1,9 @@
+# Frontend build (rootDirectory: neuropredict-frontend) needs none of this.
+complete_gpu_models
+gpu_models
+models
+*.pkl
+*.csv
+__pycache__
+.venv
+node_modules
