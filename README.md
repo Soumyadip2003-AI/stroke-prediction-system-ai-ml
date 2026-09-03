@@ -4,8 +4,9 @@
 
 ![React Frontend](https://img.shields.io/badge/React-Frontend-blue)
 ![Flask Backend](https://img.shields.io/badge/Flask-Backend-green)
-![Model](https://img.shields.io/badge/ROC--AUC-0.84-brightgreen)
+![Model](https://img.shields.io/badge/ROC--AUC-0.84%20%C2%B1%200.02-brightgreen)
 ![Recall](https://img.shields.io/badge/strokes%20caught-84%25-brightgreen)
+![Within age band](https://img.shields.io/badge/within%20age%20band-0.50--0.69-orange)
 
 ![NeuroPredict stroke risk assessment](assets/preview.png)
 
@@ -18,8 +19,10 @@ Flask API serving one calibrated scikit-learn model trained on a public dataset 
 
 It answers ten questions with a calibrated probability, the multiple of the population
 average it represents, and the factors driving that number. Held-out ROC-AUC is
-0.84 and it catches 84% of strokes. It is not a clinical device and has not been
-clinically validated.
+0.84 +/- 0.02 and it catches 84% of strokes, but that accuracy is carried by ranking
+across ages: within an age band it is much weaker, 0.66 for 60-80 and 0.50 over 80,
+where 0.50 is chance. It is not a clinical device and has not been clinically
+validated.
 
 ## 🧭 Repository management
 
@@ -53,7 +56,7 @@ npm run check
 
 ### ✨ What Makes NeuroPredict Special?
 
-- 🧠 **One Calibrated Model**: Logistic regression over 21 features, held-out ROC-AUC 0.84
+- 🧠 **One Calibrated Model**: Logistic regression over 21 features, held-out ROC-AUC 0.84 +/- 0.02 across ages, 0.50-0.69 within an age band
 - 🎯 **Honest Numbers**: The percentage shown is a real probability, accurate to about one point below 25%
 - 🔍 **Explained Results**: Every score comes with the factors that drove it
 - ♿ **Accessible**: Labelled controls, visible focus, `prefers-reduced-motion` honoured throughout
