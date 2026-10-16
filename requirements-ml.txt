@@ -9,7 +9,7 @@
 # lightgbm 4.1.0 ships no wheel for macOS arm64 / Python 3.11 and its
 # CMakeLists is rejected by CMake 4.x, which failed the whole install and
 # silently took xgboost, catboost, optuna, imblearn and mlxtend down with it.
-lightgbm==4.5.0
+lightgbm==4.6.0
 
 xgboost==2.0.3
 catboost==1.2.2
